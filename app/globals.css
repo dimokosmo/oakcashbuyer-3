@@ -1,0 +1,5 @@
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:"Outfit",sans-serif;background:#0c0c0c;color:#e8e4dc;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+::selection{background:#e8a84c;color:#0c0c0c}
+a{color:inherit;text-decoration:none}
