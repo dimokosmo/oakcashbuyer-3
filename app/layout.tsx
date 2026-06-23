@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Sell Your Home for Cash | OaklandCash",
+  title: "Submit Your Property for Local Investor Review | OaklandCash",
   description:
-    "Get a fair cash offer on your Oakland County home. No repairs, no agents, close in as few as 14 days.",
+    "Submit an Oakland County property for local investor review by Dimitrios Kosmidis, a licensed Michigan real estate professional and investor.",
   openGraph: {
-    title: "Sell Your Home for Cash | OaklandCash",
+    title: "Submit Your Property for Local Investor Review | OaklandCash",
     description:
-      "Get a fair cash offer on your Oakland County home within 24 hours.",
+      "A local review path for properties that may fit rentals, renovations, off-market purchases, or direct sale conversations.",
     type: "website",
   },
 };
@@ -18,6 +19,10 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const gaMeasurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+  const googleSiteVerification =
+    process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION;
+
   return (
     <html lang="en">
       <head>
@@ -31,15 +36,21 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Outfit:wght@300;400;500;600;700&display=swap"
           rel="stylesheet"
         />
+        {googleSiteVerification ? (
+          <meta
+            name="google-site-verification"
+            content={googleSiteVerification}
+          />
+        ) : null}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "RealEstateAgent",
-              name: "OaklandCash",
+              name: "Dimitrios Kosmidis",
               description:
-                "Oakland County's trusted cash home buyers. We purchase homes in any condition for a fair cash price with fast closing.",
+                "Licensed Michigan real estate professional and real estate investor reviewing Oakland County properties for possible direct purchase, renovation, rental, or off-market investment opportunities.",
               url: "https://oaklandcash.com",
               telephone: "+12485550100",
               address: {
@@ -60,17 +71,34 @@ export default function RootLayout({
                 "Pontiac",
                 "Waterford",
               ].map((c) => ({ "@type": "City", name: `${c}, MI` })),
-              aggregateRating: {
-                "@type": "AggregateRating",
-                ratingValue: 4.9,
-                reviewCount: 127,
-                bestRating: 5,
-              },
             }),
           }}
         />
       </head>
-      <body>{children}</body>
+      <body>
+        {gaMeasurementId ? (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${gaMeasurementId}`}
+              strategy="afterInteractive"
+            />
+            <Script
+              id="ga4-init"
+              strategy="afterInteractive"
+              dangerouslySetInnerHTML={{
+                __html: `
+                  window.dataLayer = window.dataLayer || [];
+                  function gtag(){dataLayer.push(arguments);}
+                  window.gtag = gtag;
+                  gtag('js', new Date());
+                  gtag('config', '${gaMeasurementId}', { send_page_view: true });
+                `,
+              }}
+            />
+          </>
+        ) : null}
+        {children}
+      </body>
     </html>
   );
 }

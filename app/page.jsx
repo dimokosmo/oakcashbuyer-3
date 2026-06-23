@@ -1,5 +1,7 @@
 "use client";
 import { useState, useEffect, useRef, useCallback, useMemo, createContext, useContext, Fragment } from "react";
+import { investorFitScoreRange, trackEvent } from "../lib/analytics";
+import { locations as CITY_LOCATIONS } from "../lib/locations";
 
 // ═══════════════════════════════════════════════════════════════════
 // DESIGN SYSTEM — DARK LUXURY EDITORIAL V3
@@ -20,15 +22,16 @@ const C = {
 // ═══════════════════════════════════════════════════════════════════
 const INTENTS = { DEFAULT:"default", INHERITED:"inherited", DISTRESSED:"distressed", FAST:"fastClose" };
 const CONTENT = {
-  [INTENTS.DEFAULT]:{ hero:"Sell Your Home\nfor Cash.",sub:"No repairs. No showings. No agents. Get a fair cash offer on your Oakland County home within 24 hours and close in as few as 14 days.",cta:"Get Your Cash Offer",badge:null,formTitle:"Get Your Free Cash Offer",formSub:"Tell us about your property and we'll respond within 24 hours." },
-  [INTENTS.INHERITED]:{ hero:"Inherited a\nProperty?",sub:"Skip the stress of managing an inherited home. We handle probate coordination, out-of-state logistics, and close on your schedule.",cta:"Get an Inherited Home Offer",badge:"Probate-Friendly Process",formTitle:"Tell Us About the Inherited Property",formSub:"We work with estate attorneys and handle everything remotely." },
-  [INTENTS.DISTRESSED]:{ hero:"Sell As-Is.\nNo Repairs.",sub:"Foundation issues, fire damage, code violations — we've seen it all. Get a fair cash offer regardless of condition and walk away clean.",cta:"Get an As-Is Cash Offer",badge:"Any Condition Accepted",formTitle:"Tell Us About Your Property's Condition",formSub:"Every condition is welcome. We buy homes others won't." },
-  [INTENTS.FAST]:{ hero:"Need to Sell\nFast?",sub:"Facing foreclosure, relocating, or need cash now? Skip months of listings. We move at your speed with a guaranteed close in as few as 14 days.",cta:"Get a Fast Cash Offer",badge:"Priority Processing",formTitle:"Let's Move Quickly",formSub:"Tell us your situation and we'll prioritize your offer." },
+  [INTENTS.DEFAULT]:{ hero:"Have a Property That Might Be a Good Fit for a Local Investor?",sub:"I buy and review homes across Oakland County for rentals, renovations, and investment opportunities. If your property needs work, has tenants, is inherited, or you simply want a direct sale without preparing it for the market, start with a quick property review.",cta:"Submit My Property",badge:null,formTitle:"Submit Your Property for Review",formSub:"Share the basics so I can review whether the property may fit a direct purchase, rental, renovation, or off-market opportunity." },
+  [INTENTS.INHERITED]:{ hero:"Inherited a\nProperty?",sub:"If you inherited a home and want to understand whether a direct investor sale could make sense, submit the property for a local review. Estate timing, repairs, occupancy, and location can all be discussed without pressure.",cta:"Submit Inherited Property",badge:"Estate-Aware Review",formTitle:"Submit the Inherited Property",formSub:"Share the property details, probate status, and timeline so the situation can be reviewed clearly." },
+  [INTENTS.DISTRESSED]:{ hero:"Property Needs\nWork?",sub:"Homes with repairs, deferred maintenance, code issues, fire damage, water damage, or cleanup needs may still be worth reviewing for a renovation or investment purchase.",cta:"Submit for Investor Review",badge:"Repair-Friendly Review",formTitle:"Tell Me About the Property Condition",formSub:"Be direct about the condition. The goal is to understand whether an investor review makes sense." },
+  [INTENTS.FAST]:{ hero:"Need a Direct\nSale Conversation?",sub:"If timing, tenants, vacancy, repairs, or personal circumstances make a traditional sale difficult, submit the property and timeline for review. Not every property will receive an offer.",cta:"Start Property Review",badge:"Direct Review Path",formTitle:"Share Your Timeline",formSub:"Tell me what is driving the timeline so I can review the property in context." },
 };
+const DISCLOSURE="Dimitrios Kosmidis is a licensed Michigan real estate professional and real estate investor. This site is intended for homeowners interested in a possible direct sale, investor purchase, or off-market property review. Not every property will receive an offer. Submitting a property does not create an agency relationship or obligation to sell. If a traditional listing appears to be a better fit, that option may be discussed separately.";
 const COND_FIELDS = {
   [INTENTS.INHERITED]:[{name:"probateStatus",label:"Probate Status",opts:["Not Started","In Progress","Completed","Not Sure"]},{name:"outOfState",label:"Live out of state?",opts:["Yes","No"]}],
-  [INTENTS.DISTRESSED]:[{name:"damageType",label:"Type of Issues",opts:["Fire Damage","Water Damage","Foundation","Roof","Code Violations","Mold","Other"]},{name:"repairEst",label:"Est. Repair Cost",opts:["Under $10K","$10K–$30K","$30K–$75K","$75K+","No Idea"]}],
-  [INTENTS.FAST]:[{name:"urgency",label:"What's driving urgency?",opts:["Foreclosure","Relocation","Divorce","Financial","Estate","Other"]},{name:"moveOut",label:"When do you need out?",opts:["Immediately","Within 2 Weeks","Within 30 Days","Flexible"]}],
+  [INTENTS.DISTRESSED]:[{name:"damageType",label:"Type of Issues",opts:["Fire Damage","Water Damage","Foundation","Roof","Code Violations","Mold","Other"]},{name:"repairEstimate",label:"Est. Repair Cost",opts:["Under $10K","$10K-$30K","$30K-$75K","$75K+","No Idea"]}],
+  [INTENTS.FAST]:[{name:"urgencyReason",label:"What's driving urgency?",opts:["Foreclosure","Relocation","Divorce","Financial","Estate","Other"]},{name:"moveOutDate",label:"When do you need out?",opts:["Immediately","Within 2 Weeks","Within 30 Days","Flexible"]}],
 };
 const IntentCtx = createContext(null);
 function IntentProvider({children}){
@@ -77,7 +80,6 @@ const Ico={
   Star:({s=15})=><svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>,
   Menu:()=><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>,
   X:()=><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
-  Map:({s=16})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>,
   Book:({s=18})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>,
   Back:({s=18})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>,
 };
@@ -86,42 +88,27 @@ const Ico={
 // DATA
 // ═══════════════════════════════════════════════════════════════════
 const FAQS=[
-  {q:"Do I need to make repairs before selling?",a:"No. We purchase properties in any condition — from move-in ready to major structural damage. You never spend a dollar on repairs.",cat:"general"},
-  {q:"How fast can we close?",a:"Most closings complete within 14 to 21 days. If you need more time, we're completely flexible and work on your schedule.",cat:"process"},
-  {q:"What if I inherited a property and live out of state?",a:"We work with inherited property owners regularly, including those out of state. The entire process can be handled remotely.",cat:"inherited"},
-  {q:"Are there any fees or commissions?",a:"Zero fees, zero commissions, zero closing costs. The offer you accept is the amount you receive at closing.",cat:"financial"},
-  {q:"What types of properties do you buy?",a:"Single-family homes, duplexes, condos, townhomes, and vacant lots. Fire-damaged, code violations, or outdated — we buy it all.",cat:"general"},
-  {q:"How is the offer price determined?",a:"We evaluate location, condition, comparable sales, and needed repairs. Our offers are fair, transparent, and based on current market data.",cat:"process"},
-  {q:"What if my property has liens or back taxes?",a:"We regularly work with properties that have tax liens, code violations, or title issues. Our team helps resolve these at closing.",cat:"financial"},
+  {q:"Do I need to make repairs before submitting?",a:"No. The review is meant for properties as they are today, including homes with deferred maintenance, tenants, vacancy, cleanup needs, or inherited-property questions.",cat:"general"},
+  {q:"Will every property receive an offer?",a:"No. Some properties may be a fit for a direct investor purchase, some may need more information, and some may be better suited for a traditional listing or another path.",cat:"process"},
+  {q:"What if I inherited a property and live out of state?",a:"Inherited properties can be reviewed even when the owner is out of state. Probate status, title questions, occupancy, and timing can all be considered during the review.",cat:"inherited"},
+  {q:"Is this a Realtor listing funnel?",a:"No. The main purpose is local investor review for possible direct purchase, renovation, rental, or off-market opportunities. If listing appears to be a better fit, that can be discussed separately.",cat:"financial"},
+  {q:"What types of properties are worth submitting?",a:"Single-family homes, duplexes, condos, townhomes, tenant-occupied homes, vacant homes, inherited homes, and properties needing repairs may all be worth a review.",cat:"general"},
+  {q:"How is a potential offer evaluated?",a:"Location, condition, occupancy, repair scope, comparable sales, rental potential, resale potential, title issues, and timing all matter. The goal is a clear, ethical review.",cat:"process"},
+  {q:"What if my property has liens, back taxes, or title issues?",a:"Those details should be disclosed during review. Some issues can be worked through before closing, but every situation is evaluated case by case.",cat:"financial"},
 ];
 
 const POSTS=[
-  {id:1,cat:"Selling Tips",title:"How to Sell Your House Fast in Michigan Without a Realtor",ex:"The step-by-step process homeowners use to sell quickly for cash and skip agent commissions.",date:"Feb 18, 2026",read:"6 min",feat:true,grad:`linear-gradient(135deg,${C.amberGlow},rgba(12,12,12,0.95))`,kw:["sell house fast michigan","sell without realtor"]},
-  {id:2,cat:"Inherited Property",title:"Selling an Inherited Home in Oakland County: Complete Guide",ex:"Navigating probate, tax implications, and finding the fastest path to selling an inherited property.",date:"Feb 12, 2026",read:"8 min",grad:`linear-gradient(135deg,${C.greenBg},rgba(12,12,12,0.95))`,kw:["sell inherited home","oakland county probate"]},
-  {id:3,cat:"Market Insights",title:"Oakland County Real Estate Market — Q1 2026 Update",ex:"Median prices, days on market, and cash buyer activity across Rochester Hills, Troy, and Birmingham.",date:"Feb 8, 2026",read:"5 min",grad:`linear-gradient(135deg,rgba(38,38,38,0.6),rgba(12,12,12,0.95))`,kw:["oakland county real estate","housing market 2026"]},
-  {id:4,cat:"Distressed Property",title:"Selling a House As-Is: What Cash Buyers Look For",ex:"Fire damage, foundation issues, code violations — what experienced buyers evaluate and how it affects your offer.",date:"Feb 2, 2026",read:"7 min",grad:`linear-gradient(135deg,rgba(232,168,76,0.08),rgba(12,12,12,0.95))`,kw:["sell house as-is","distressed property"]},
-  {id:5,cat:"Selling Tips",title:"Cash Offer vs. Traditional Sale: Net Proceeds Compared",ex:"A transparent comparison of timelines, hidden costs, and what you actually keep after closing.",date:"Jan 28, 2026",read:"6 min",grad:`linear-gradient(135deg,rgba(245,240,232,0.04),rgba(12,12,12,0.95))`,kw:["cash offer vs listing"]},
-  {id:6,cat:"Urgent Timeline",title:"Facing Foreclosure? Your Michigan Options Explained",ex:"Pre-foreclosure timelines, legal protections, and how a fast cash sale protects your credit.",date:"Jan 22, 2026",read:"9 min",grad:`linear-gradient(135deg,rgba(232,104,90,0.08),rgba(12,12,12,0.95))`,kw:["foreclosure help michigan"]},
+  {id:1,cat:"Investor Review",title:"What Makes a Property Fit for a Local Investor Review?",ex:"Repair scope, rental potential, resale value, occupancy, location, and seller goals all shape whether a direct investor conversation makes sense.",date:"Feb 18, 2026",read:"6 min",feat:true,grad:`linear-gradient(135deg,${C.amberGlow},rgba(12,12,12,0.95))`,kw:["local investor review","oakland county investment property"]},
+  {id:2,cat:"Inherited Property",title:"Inherited Property Review in Oakland County",ex:"How probate status, title, repairs, family timing, and out-of-state ownership affect a possible direct sale.",date:"Feb 12, 2026",read:"8 min",grad:`linear-gradient(135deg,${C.greenBg},rgba(12,12,12,0.95))`,kw:["inherited property review","oakland county probate"]},
+  {id:3,cat:"Market Insights",title:"Oakland County Investment Property Signals",ex:"A practical look at rental demand, renovation opportunities, days on market, and neighborhood-level investor fit.",date:"Feb 8, 2026",read:"5 min",grad:`linear-gradient(135deg,rgba(38,38,38,0.6),rgba(12,12,12,0.95))`,kw:["oakland county real estate","investment property"]},
+  {id:4,cat:"Distressed Property",title:"Submitting a Property That Needs Repairs",ex:"Fire damage, foundation issues, deferred maintenance, and code concerns can all affect whether a renovation purchase is viable.",date:"Feb 2, 2026",read:"7 min",grad:`linear-gradient(135deg,rgba(232,168,76,0.08),rgba(12,12,12,0.95))`,kw:["property needs repairs","distressed property review"]},
+  {id:5,cat:"Direct Sale",title:"Direct Investor Sale vs. Traditional Listing",ex:"A clear comparison of preparation, timing, certainty, market exposure, and tradeoffs for homeowners considering both paths.",date:"Jan 28, 2026",read:"6 min",grad:`linear-gradient(135deg,rgba(245,240,232,0.04),rgba(12,12,12,0.95))`,kw:["direct investor sale","traditional listing alternative"]},
+  {id:6,cat:"Urgent Timeline",title:"When Timing Makes a Direct Review Worth Considering",ex:"Tenant issues, vacancy, repairs, relocation, foreclosure pressure, and inherited-property deadlines can all change the best next step.",date:"Jan 22, 2026",read:"9 min",grad:`linear-gradient(135deg,rgba(232,104,90,0.08),rgba(12,12,12,0.95))`,kw:["urgent property review","direct sale michigan"]},
 ];
 
-const LOCATIONS=[
-  {slug:"rochester-hills",city:"Rochester Hills",zips:["48306","48307","48309"],price:385,days:28},
-  {slug:"troy",city:"Troy",zips:["48083","48084","48085"],price:365,days:25},
-  {slug:"birmingham",city:"Birmingham",zips:["48009","48012"],price:520,days:22},
-  {slug:"bloomfield-hills",city:"Bloomfield Hills",zips:["48301","48302","48304"],price:590,days:35},
-  {slug:"auburn-hills",city:"Auburn Hills",zips:["48321","48326"],price:265,days:30},
-  {slug:"royal-oak",city:"Royal Oak",zips:["48067","48073"],price:325,days:18},
-  {slug:"southfield",city:"Southfield",zips:["48033","48075","48076"],price:195,days:35},
-  {slug:"pontiac",city:"Pontiac",zips:["48340","48342"],price:135,days:40},
-  {slug:"waterford",city:"Waterford",zips:["48327","48328","48329"],price:230,days:26},
-];
+const LOCATIONS=CITY_LOCATIONS;
 
-const CATS=["All","Selling Tips","Inherited Property","Distressed Property","Urgent Timeline","Market Insights"];
-const TESTS=[
-  {text:"I inherited my parents' home and had no idea where to start. They made the whole process effortless. Closed in 16 days and handled everything with the estate attorney.",name:"Maria S.",loc:"Birmingham, MI",bg:C.amber,init:"MS"},
-  {text:"My house needed a new roof, new plumbing — no buyer would look at it. These guys made a fair offer the same day I called. No regrets whatsoever.",name:"David T.",loc:"Rochester Hills, MI",bg:C.green,init:"DT"},
-  {text:"Had to relocate for work with very little notice. Traditional sale was impossible. They closed in 15 days. I walked away with cash and zero stress.",name:"Sarah K.",loc:"Troy, MI",bg:C.amberD,init:"SK"},
-];
+const CATS=["All","Investor Review","Inherited Property","Distressed Property","Direct Sale","Urgent Timeline","Market Insights"];
 
 // ═══════════════════════════════════════════════════════════════════
 // STYLES
@@ -300,8 +287,15 @@ a{color:inherit;text-decoration:none;}
 .fl{display:block;font-size:12px;font-weight:600;color:${C.creamM};margin-bottom:7px;text-transform:uppercase;letter-spacing:0.04em;}
 .fi{width:100%;padding:13px 15px;border:1.5px solid ${C.border};border-radius:9px;font-family:'Outfit',sans-serif;font-size:14px;color:${C.cream};background:${C.subtle};transition:all 0.25s;outline:none;} .fi:focus{border-color:${C.amber};background:${C.card};box-shadow:0 0 0 3px ${C.amberGlow};} .fi.err{border-color:${C.err};box-shadow:0 0 0 3px rgba(232,104,90,0.1);} .fi::placeholder{color:${C.dim};}
 select.fi{appearance:none;background-image:url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236B665E' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px;} select.fi option{background:${C.card};color:${C.cream};}
-.ferr{font-size:11px;color:${C.err};margin-top:5px;}
-.fo{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+	.ferr{font-size:11px;color:${C.err};margin-top:5px;}
+		.falert{font-size:13px;color:${C.err};line-height:1.55;background:rgba(232,104,90,0.08);border:1px solid rgba(232,104,90,0.22);border-radius:9px;padding:11px 13px;margin-top:16px;}
+		.disc{font-size:11px;color:${C.dim};line-height:1.65;margin-top:22px;padding-top:18px;border-top:1px solid ${C.border};}
+		.fitp{background:${C.subtle};border:1px solid rgba(232,168,76,0.16);border-radius:14px;padding:18px 18px;margin:4px 0 20px;}
+		.fitp-l{font-size:10px;font-weight:700;color:${C.amber};text-transform:uppercase;letter-spacing:0.1em;margin-bottom:7px;}
+		.fitp-r{font-family:'DM Serif Display',serif;font-size:22px;color:${C.cream};margin-bottom:8px;}
+		.fitp-m{font-size:13px;color:${C.muted};line-height:1.65;margin-bottom:10px;}
+		.fitp-d{font-size:11px;color:${C.dim};line-height:1.6;border-top:1px solid ${C.border};padding-top:10px;}
+		.fo{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
 .fop{padding:14px;border:1.5px solid ${C.border};border-radius:10px;cursor:pointer;transition:all 0.3s var(--e);background:${C.subtle};text-align:center;}
 .fop:hover{border-color:${C.borderH};background:${C.surface};} .fop.sel{border-color:${C.amber};background:${C.amberGlow};}
 .fop-l{font-size:14px;font-weight:600;color:${C.cream};} .fop-d{font-size:11px;color:${C.dim};margin-top:2px;}
@@ -339,7 +333,8 @@ select.fi{appearance:none;background-image:url("data:image/svg+xml,%3Csvg width=
 .foot-d{font-size:13px;color:${C.dim};line-height:1.7;max-width:260px;}
 .foot-h{font-size:11px;font-weight:700;color:${C.dim};text-transform:uppercase;letter-spacing:0.1em;margin-bottom:14px;}
 .foot-ul{list-style:none;display:flex;flex-direction:column;gap:9px;} .foot-ul a{font-size:13px;color:${C.muted};transition:color 0.2s;} .foot-ul a:hover{color:${C.cream};}
-.foot-bot{padding-top:22px;border-top:1px solid ${C.border};display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;}
+	.foot-dis{font-size:11px;color:${C.dim};line-height:1.7;max-width:920px;margin:-16px 0 28px;padding-top:22px;border-top:1px solid ${C.border};}
+	.foot-bot{padding-top:22px;border-top:1px solid ${C.border};display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;}
 .foot-c{font-size:12px;color:${C.dim};}
 .foot-bgs{display:flex;gap:10px;} .foot-bg{font-size:10px;font-weight:600;color:${C.dim};padding:5px 10px;border:1px solid ${C.border};border-radius:5px;}
 @media(max-width:768px){.foot-g{grid-template-columns:1fr 1fr;gap:28px;}}
@@ -353,7 +348,7 @@ select.fi{appearance:none;background-image:url("data:image/svg+xml,%3Csvg width=
 `;
 
 // ═══════════════════════════════════════════════════════════════════
-// STATUS LINE (submission pipeline visual)
+// STATUS LINE (submission state visual)
 // ═══════════════════════════════════════════════════════════════════
 function StatusLine({icon,text,done,active}){
   return(<div style={{display:"flex",alignItems:"center",gap:8,fontSize:13,color:done?C.green:active?C.amber:C.dim,transition:"all 0.3s"}}>
@@ -367,60 +362,103 @@ function StatusLine({icon,text,done,active}){
 // MULTI-STEP LEAD FORM
 // ═══════════════════════════════════════════════════════════════════
 const STEPS=[{id:"property",label:"Property"},{id:"details",label:"Details"},{id:"contact",label:"Contact"}];
-const REASS={0:"This takes less than 2 minutes. No commitment required.",1:"Every property condition is welcome — no judgment here.",2:"Your information is private and never shared."};
+const REASS={0:"This takes less than 2 minutes. No commitment required.",1:"Describe the property as it is today so the review is realistic.",2:"Your information is private and never shared."};
+const FIT_COPY={
+  strong:{result:"Strong Potential Fit",message:"Based on what you shared, this property may be a strong fit for investor review. I'll review the details directly and follow up with the next practical step."},
+  possible:{result:"Possible Fit",message:"Based on what you shared, this property may be a possible fit for investor review. I'll review the details and determine whether a direct investor conversation makes sense."},
+  manual:{result:"Needs Manual Review",message:"Based on what you shared, this property needs a closer review before determining whether it fits my current rental, renovation, or investor purchase criteria."},
+};
+function calcInvestorFit(fd){
+  const txt=[fd.condition,fd.occupancy,fd.propertyType,fd.timeline,fd.mainGoal,fd.ownership,fd.knownIssues,fd.repairsNeeded,fd.damageType,fd.repairEstimate,fd.urgencyReason,fd.moveOutDate].join(" ").toLowerCase();
+  let score=0;
+  if(/(fair|poor|needs repairs|major repairs|damaged|not financeable|renovation)/.test(txt))score+=2;
+  if(/(vacant|tenant)/.test(fd.occupancy.toLowerCase()))score+=2;
+  if(/(single-family|duplex|multifamily|townhome)/.test(fd.propertyType.toLowerCase()))score+=1;
+  if(/(immediately|within 2 weeks|within 30 days|14days|30days)/.test(txt))score+=2;
+  if(/(fast sale|no repairs|no showings|tenant issue|avoid public listing|cash|direct sale|direct-review)/.test(txt))score+=2;
+  if(/(inherited|trust|estate|landlord)/.test(fd.ownership.toLowerCase()))score+=1;
+  if(/(roof|foundation|plumbing|electrical|hvac|water damage|fire damage|code violations|tenant issue|cleanout needed)/.test(txt))score+=1;
+  const key=score>=7?"strong":score>=4?"possible":"manual";
+  return {score,result:FIT_COPY[key].result,message:FIT_COPY[key].message};
+}
 
 function LeadForm(){
   const{content,condFields,intent}=useIntent();
-  const[step,setStep]=useState(0);const[done,setDone]=useState(false);const[errs,setErrs]=useState({});
+  const[step,setStep]=useState(0);const[errs,setErrs]=useState({});
   const[submitting,setSubmitting]=useState(false);
-  const[taskId,setTaskId]=useState(null);
-  const[fd,setFd]=useState({address:"",city:"",state:"MI",zip:"",condition:"",timeline:"",ownership:"",occupancy:"",firstName:"",lastName:"",email:"",phone:""});
-  const up=(k,v)=>{setFd(p=>({...p,[k]:v}));setErrs(p=>({...p,[k]:undefined}));};
+  const[submitError,setSubmitError]=useState("");
+  const[fd,setFd]=useState({address:"",city:"",state:"MI",zip:"",propertyType:"",condition:"",knownIssues:"",repairsNeeded:"",timeline:"",mainGoal:"",ownership:"",occupancy:"",firstName:"",lastName:"",email:"",phone:"",website:""});
+  const formStarted=useRef(false);
+  const fitTracked=useRef("");
+  const fit=useMemo(()=>calcInvestorFit(fd),[fd]);
+  const showFit=Boolean(fd.address.trim()&&fd.city.trim()&&fd.zip.trim()&&fd.condition&&fd.timeline);
+  useEffect(()=>{
+    if(!showFit)return;
+    const scoreRange=investorFitScoreRange(fit.score);
+    const fitKey=`${fit.result}-${scoreRange}`;
+    if(fitTracked.current===fitKey)return;
+    fitTracked.current=fitKey;
+    trackEvent("investor_fit_calculated", {
+      investor_fit: fit.result,
+      investor_fit_score_range: scoreRange,
+      lead_type: intent,
+    });
+  },[showFit,fit.result,fit.score,intent]);
+  const up=(k,v)=>{
+    if(k!=="website"&&!formStarted.current){
+      formStarted.current=true;
+      trackEvent("investor_form_started", {lead_type:intent});
+    }
+    setFd(p=>({...p,[k]:v}));setErrs(p=>({...p,[k]:undefined,contact:undefined}));setSubmitError("");
+  };
   const val=()=>{const e={};
     if(step===0){if(!fd.address.trim())e.address="Required";if(!fd.city.trim())e.city="Required";if(!fd.zip.trim())e.zip="Required";}
     else if(step===1){if(!fd.condition)e.condition="Select condition";if(!fd.timeline)e.timeline="Select timeline";}
-    else{if(!fd.firstName.trim())e.firstName="Required";if(!fd.email.trim())e.email="Required";else if(!/\S+@\S+\.\S+/.test(fd.email))e.email="Invalid email";if(!fd.phone.trim())e.phone="Required";}
+    else{if(!fd.firstName.trim())e.firstName="Required";if(fd.email.trim()&&!/\S+@\S+\.\S+/.test(fd.email))e.email="Invalid email";if(!fd.email.trim()&&!fd.phone.trim())e.contact="Add a phone number or email.";}
     setErrs(e);return!Object.keys(e).length;};
-  const next=()=>{if(val()){if(step<2)setStep(step+1);else{
-    setSubmitting(true);
-    // Simulate ClickUp + API pipeline
-    setTimeout(()=>{
-      setTaskId("CU-" + Math.random().toString(36).substr(2,8).toUpperCase());
+  const submit=async()=>{if(!val())return;
+    setSubmitting(true);setSubmitError("");
+    const scoreRange=investorFitScoreRange(fit.score);
+    trackEvent("investor_form_submitted", {
+      investor_fit: fit.result,
+      investor_fit_score_range: scoreRange,
+      form_step: STEPS[step].id,
+      lead_type: intent,
+    });
+    try{
+      const res=await fetch("/api/leads",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({...fd,mainGoal:fd.mainGoal||fd.timeline,investorFit:fit.result,investorFitScore:fit.score,intent,source:"website",sourcePage:window.location?.pathname||"/",submittedAt:new Date().toISOString()})});
+      let body={};
+      try{body=await res.json();}catch{}
+      if(!res.ok||!body?.success)throw new Error(body?.error||"Submission failed");
+      trackEvent("investor_lead_success", {
+        investor_fit: fit.result,
+        investor_fit_score_range: scoreRange,
+        lead_type: intent,
+      });
+      window.location.assign("/thank-you");
+    }catch{
+      trackEvent("investor_lead_error", {
+        error_type: "submission_failed",
+        lead_type: intent,
+      });
+      setSubmitError("We could not submit your property review request. Please check your details and try again, or contact Dimitrios directly.");
+    }finally{
       setSubmitting(false);
-      setDone(true);
-    },1800);
-  }}};
+    }
+  };
+  const next=()=>{if(step<2){if(val()){trackEvent("investor_form_step_completed",{form_step:STEPS[step].id,lead_type:intent});setStep(step+1);}}else submit();};
 
   if(submitting)return(<div style={{textAlign:"center",padding:"48px 0"}}>
     <div style={{width:64,height:64,margin:"0 auto 20px",position:"relative"}}>
       <div style={{position:"absolute",inset:0,border:`3px solid ${C.surface}`,borderRadius:"50%"}}/>
       <div style={{position:"absolute",inset:0,border:`3px solid transparent`,borderTop:`3px solid ${C.amber}`,borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>
-    </div>
-    <p style={{fontSize:15,color:C.cream,fontWeight:600,marginBottom:6}}>Creating your deal...</p>
-    <div style={{display:"flex",flexDirection:"column",gap:8,alignItems:"center",marginTop:16}}>
-      <StatusLine icon="✓" text="Lead validated" done/>
-      <StatusLine icon="⟳" text="Creating ClickUp task..." active/>
-      <StatusLine icon="○" text="Sending to pipeline"/>
-      <StatusLine icon="○" text="Triggering notifications"/>
-    </div>
-  </div>);
-
-  if(done)return(<div style={{textAlign:"center",padding:"36px 0",animation:"scaleI 0.5s var(--sp) both"}}>
-    <div style={{width:72,height:72,borderRadius:"50%",background:C.greenBg,color:C.green,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 20px",fontSize:32}}>✓</div>
-    <h2 style={{fontFamily:"'DM Serif Display',serif",fontSize:26,color:C.cream,marginBottom:10}}>We've Got Your Details</h2>
-    <p style={{fontSize:15,color:C.muted,lineHeight:1.65,maxWidth:400,margin:"0 auto 20px"}}>Our team will review your property and reach out within 24 hours with a no-obligation cash offer.</p>
-    {taskId&&<div style={{display:"inline-flex",alignItems:"center",gap:8,padding:"10px 18px",background:C.subtle,border:`1px solid ${C.border}`,borderRadius:10,fontSize:12}}>
-      <span style={{color:C.green}}>●</span>
-      <span style={{color:C.muted}}>ClickUp Task:</span>
-      <span style={{color:C.cream,fontWeight:600,fontFamily:"monospace"}}>{taskId}</span>
-      <span style={{color:C.dim}}>→ Pipeline: New Lead</span>
-    </div>}
-    <div style={{marginTop:16,display:"flex",justifyContent:"center",gap:12,flexWrap:"wrap"}}>
-      {[{t:"Lead validated",c:C.green},{t:"ClickUp task created",c:C.green},{t:"n8n webhook sent",c:C.green},{t:"GA4 event logged",c:C.green}].map(s=>
-        <span key={s.t} style={{fontSize:11,color:s.c,display:"flex",alignItems:"center",gap:4,padding:"4px 10px",background:"rgba(107,191,123,0.08)",borderRadius:6}}>✓ {s.t}</span>
-      )}
-    </div>
-  </div>);
+	    </div>
+	    <p style={{fontSize:15,color:C.cream,fontWeight:600,marginBottom:6}}>Preparing your review...</p>
+	    <div style={{display:"flex",flexDirection:"column",gap:8,alignItems:"center",marginTop:16}}>
+	      <StatusLine icon="✓" text="Property details captured" done/>
+	      <StatusLine icon="⟳" text="Submitting secure review request..." active/>
+	    </div>
+	  </div>);
 
   return(<div>
     <div className="fp">{STEPS.map((s,i)=><Fragment key={s.id}>
@@ -431,18 +469,21 @@ function LeadForm(){
     <div className="fstep" key={step}>
       {step===0&&<div>
         <div className="ftit">{content.formTitle}</div><div className="fsub">{content.formSub}</div>
-        <div className="fg"><label className="fl">Street Address</label><input className={`fi ${errs.address?"err":""}`} value={fd.address} onChange={e=>up("address",e.target.value)} placeholder="123 Main Street"/>{errs.address&&<div className="ferr">{errs.address}</div>}</div>
-        <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr",gap:10}}>
+	        <div className="fg"><label className="fl">Street Address</label><input className={`fi ${errs.address?"err":""}`} value={fd.address} onChange={e=>up("address",e.target.value)} placeholder="123 Main Street"/>{errs.address&&<div className="ferr">{errs.address}</div>}</div>
+	        <input tabIndex={-1} autoComplete="off" value={fd.website} onChange={e=>up("website",e.target.value)} style={{position:"absolute",left:"-9999px",height:0,width:0,opacity:0}} aria-hidden="true"/>
+	        <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr",gap:10}}>
           <div className="fg"><label className="fl">City</label><input className={`fi ${errs.city?"err":""}`} value={fd.city} onChange={e=>up("city",e.target.value)} placeholder="Rochester Hills"/>{errs.city&&<div className="ferr">{errs.city}</div>}</div>
           <div className="fg"><label className="fl">State</label><select className="fi" value={fd.state} onChange={e=>up("state",e.target.value)}><option>MI</option><option>OH</option><option>IN</option><option>IL</option></select></div>
           <div className="fg"><label className="fl">ZIP</label><input className={`fi ${errs.zip?"err":""}`} value={fd.zip} onChange={e=>up("zip",e.target.value)} placeholder="48309" maxLength={5}/>{errs.zip&&<div className="ferr">{errs.zip}</div>}</div>
         </div>
       </div>}
-      {step===1&&<div>
-        <div className="ftit">Property Details</div><div className="fsub">Help us understand your situation.</div>
-        <div className="fg"><label className="fl">Condition</label><div className="fo">{[{v:"excellent",l:"Move-In Ready",d:"Needs nothing"},{v:"good",l:"Minor Repairs",d:"Cosmetic"},{v:"fair",l:"Needs Work",d:"Moderate"},{v:"poor",l:"Major Repairs",d:"Significant"}].map(o=><div key={o.v} className={`fop ${fd.condition===o.v?"sel":""}`} onClick={()=>up("condition",o.v)}><div className="fop-l">{o.l}</div><div className="fop-d">{o.d}</div></div>)}</div>{errs.condition&&<div className="ferr">{errs.condition}</div>}</div>
-        <div className="fg"><label className="fl">Timeline</label><div className="fo">{[{v:"14days",l:"14 Days",d:"As fast as possible"},{v:"30days",l:"30 Days",d:"Within a month"},{v:"60days",l:"60 Days",d:"Flexible"},{v:"exploring",l:"Exploring",d:"Just looking"}].map(o=><div key={o.v} className={`fop ${fd.timeline===o.v?"sel":""}`} onClick={()=>up("timeline",o.v)}><div className="fop-l">{o.l}</div><div className="fop-d">{o.d}</div></div>)}</div>{errs.timeline&&<div className="ferr">{errs.timeline}</div>}</div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+	      {step===1&&<div>
+	        <div className="ftit">Property Details</div><div className="fsub">Help us understand your situation.</div>
+	        <div className="fg"><label className="fl">Property Type</label><select className="fi" value={fd.propertyType} onChange={e=>up("propertyType",e.target.value)}><option value="">Select...</option><option>Single-family</option><option>Duplex</option><option>Multifamily</option><option>Townhome</option><option>Condo</option><option>Vacant Land</option><option>Other</option></select></div>
+	        <div className="fg"><label className="fl">Condition</label><div className="fo">{[{v:"excellent",l:"Move-In Ready",d:"Needs nothing"},{v:"good",l:"Minor Repairs",d:"Cosmetic"},{v:"fair",l:"Needs Work",d:"Moderate"},{v:"poor",l:"Major Repairs",d:"Significant"}].map(o=><div key={o.v} className={`fop ${fd.condition===o.v?"sel":""}`} onClick={()=>up("condition",o.v)}><div className="fop-l">{o.l}</div><div className="fop-d">{o.d}</div></div>)}</div>{errs.condition&&<div className="ferr">{errs.condition}</div>}</div>
+		        <div className="fg"><label className="fl">Main Goal or Timeline</label><div className="fo">{[{v:"direct-review",l:"Direct Review",d:"Explore a sale"},{v:"renovation-fit",l:"Renovation Fit",d:"Needs work"},{v:"rental-hold",l:"Rental Potential",d:"May be a hold"},{v:"exploring",l:"Exploring",d:"Just looking"}].map(o=><div key={o.v} className={`fop ${fd.timeline===o.v?"sel":""}`} onClick={()=>{up("timeline",o.v);up("mainGoal",o.l);}}><div className="fop-l">{o.l}</div><div className="fop-d">{o.d}</div></div>)}</div>{errs.timeline&&<div className="ferr">{errs.timeline}</div>}</div>
+	        <div className="fg"><label className="fl">Known Issues</label><select className="fi" value={fd.knownIssues} onChange={e=>up("knownIssues",e.target.value)}><option value="">Select if applicable...</option><option>Roof</option><option>Foundation</option><option>Plumbing</option><option>Electrical</option><option>HVAC</option><option>Water damage</option><option>Fire damage</option><option>Code violations</option><option>Tenant issue</option><option>Cleanout needed</option><option>Other</option><option>Not sure</option></select></div>
+	        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
           <div className="fg"><label className="fl">Ownership</label><select className="fi" value={fd.ownership} onChange={e=>up("ownership",e.target.value)}><option value="">Select...</option><option>Sole Owner</option><option>Joint</option><option>Inherited</option><option>Trust/Estate</option></select></div>
           <div className="fg"><label className="fl">Occupancy</label><select className="fi" value={fd.occupancy} onChange={e=>up("occupancy",e.target.value)}><option value="">Select...</option><option>Owner-Occupied</option><option>Tenant</option><option>Vacant</option></select></div>
         </div>
@@ -450,26 +491,30 @@ function LeadForm(){
           <p style={{fontSize:11,color:C.amber,fontWeight:600,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:10}}>✦ Questions for your situation</p>
           {condFields.map(f=><div className="fg" key={f.name}><label className="fl">{f.label}</label><select className="fi" value={fd[f.name]||""} onChange={e=>up(f.name,e.target.value)}><option value="">Select...</option>{f.opts.map(o=><option key={o}>{o}</option>)}</select></div>)}
         </div>}
-      </div>}
-      {step===2&&<div>
-        <div className="ftit">Get Your Cash Offer</div><div className="fsub">We'll reach out within 24 hours — no spam, no pressure.</div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}><div className="fg"><label className="fl">First Name</label><input className={`fi ${errs.firstName?"err":""}`} value={fd.firstName} onChange={e=>up("firstName",e.target.value)} placeholder="John"/>{errs.firstName&&<div className="ferr">{errs.firstName}</div>}</div><div className="fg"><label className="fl">Last Name</label><input className="fi" value={fd.lastName} onChange={e=>up("lastName",e.target.value)} placeholder="Doe"/></div></div>
-        <div className="fg"><label className="fl">Email</label><input className={`fi ${errs.email?"err":""}`} type="email" value={fd.email} onChange={e=>up("email",e.target.value)} placeholder="john@email.com"/>{errs.email&&<div className="ferr">{errs.email}</div>}</div>
-        <div className="fg"><label className="fl">Phone</label><input className={`fi ${errs.phone?"err":""}`} type="tel" value={fd.phone} onChange={e=>up("phone",e.target.value)} placeholder="(248) 555-0100"/>{errs.phone&&<div className="ferr">{errs.phone}</div>}</div>
-      </div>}
-    </div>
-    <div className="fnav">{step>0?<button className="fbk" onClick={()=>setStep(step-1)}>← Back</button>:<div/>}<button className="btn-s" onClick={next}>{step<2?"Continue":"Get My Cash Offer"} <Ico.Arrow/></button></div>
-  </div>);
+	      </div>}
+	      {step===2&&<div>
+		        <div className="ftit">Submit for Local Review</div><div className="fsub">This does not create an agency relationship or obligation to sell.</div>
+	        {showFit&&<div className="fitp"><div className="fitp-l">Preliminary fit screen</div><div className="fitp-r">{fit.result}</div><div className="fitp-m">{fit.message}</div><div className="fitp-d">This is not an appraisal, offer, or guarantee. It is only a preliminary fit screen based on the information submitted.</div></div>}
+	        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}><div className="fg"><label className="fl">First Name</label><input className={`fi ${errs.firstName?"err":""}`} value={fd.firstName} onChange={e=>up("firstName",e.target.value)} placeholder="John"/>{errs.firstName&&<div className="ferr">{errs.firstName}</div>}</div><div className="fg"><label className="fl">Last Name</label><input className="fi" value={fd.lastName} onChange={e=>up("lastName",e.target.value)} placeholder="Doe"/></div></div>
+	        <div className="fg"><label className="fl">Email</label><input className={`fi ${errs.email?"err":""}`} type="email" value={fd.email} onChange={e=>up("email",e.target.value)} placeholder="john@email.com"/>{errs.email&&<div className="ferr">{errs.email}</div>}</div>
+	        <div className="fg"><label className="fl">Phone</label><input className={`fi ${errs.phone?"err":""}`} type="tel" value={fd.phone} onChange={e=>up("phone",e.target.value)} placeholder="(248) 555-0100"/>{errs.phone&&<div className="ferr">{errs.phone}</div>}</div>
+	        {errs.contact&&<div className="ferr" style={{marginTop:-10,marginBottom:14}}>{errs.contact}</div>}
+	      </div>}
+	    </div>
+	    {submitError&&<div className="falert">{submitError}</div>}
+	    <div className="fnav">{step>0?<button className="fbk" onClick={()=>setStep(step-1)}>← Back</button>:<div/>}<button className="btn-s" onClick={next} disabled={submitting} style={submitting?{opacity:0.65,cursor:"not-allowed"}:{}}>{step<2?"Continue":"See If My Property Is a Fit"} <Ico.Arrow/></button></div>
+	    <p className="disc">{DISCLOSURE}</p>
+	  </div>);
 }
 
 // ═══════════════════════════════════════════════════════════════════
 // INTERACTIVE TIMELINE
 // ═══════════════════════════════════════════════════════════════════
 const PROC=[
-  {n:1,t:"Share Your Property",d:"Fill out our quick form or give us a call with basic details.",tm:"5 Minutes",ico:"📋",cond:{inherited:"Share the property address and estate details. We coordinate with probate.",distressed:"Describe the property honestly — condition doesn't matter. We've seen everything.",fastClose:"Tell us your situation and timeline. We prioritize urgent requests."}},
-  {n:2,t:"Receive Cash Offer",d:"We evaluate and present a fair, no-obligation cash offer.",tm:"Within 24 Hours",ico:"💰",cond:{inherited:"We factor in estate considerations for a transparent offer.",distressed:"We account for condition — no surprise deductions later.",fastClose:"Your offer is prioritized for same-day review."}},
-  {n:3,t:"Agree on Terms",d:"Accept the offer, choose your closing date. We handle all paperwork.",tm:"You Decide",ico:"🤝",cond:{inherited:"We coordinate with your estate attorney for all title work.",distressed:"Simple agreement, no inspection contingencies. What you see is what you get.",fastClose:"Fast-track agreement with expedited title search."}},
-  {n:4,t:"Close & Get Paid",d:"Close at a local title company and receive your funds.",tm:"As Fast as 14 Days",ico:"🏦",cond:{inherited:"We handle all estate-related closing requirements.",distressed:"No last-minute renegotiation. The offer you accepted is what you get.",fastClose:"Expedited closing. Cash in your hands in as few as 14 days."}},
+  {n:1,t:"Share the Property",d:"Send the address, condition, occupancy, and your preferred timing.",tm:"Quick Intake",ico:"📋",cond:{inherited:"Share the property address, estate status, and who is involved in decisions.",distressed:"Describe the repair scope directly so the review starts with the real condition.",fastClose:"Tell me the timeline and what is driving it so the review has context."}},
+  {n:2,t:"Local Investor Review",d:"The property is reviewed for rental, renovation, resale, assignment, or direct purchase fit.",tm:"Case by Case",ico:"🔎",cond:{inherited:"Estate timing, title, occupancy, and repairs are considered together.",distressed:"Repair scope, resale potential, and renovation risk shape the review.",fastClose:"Timing is considered alongside title, occupancy, repairs, and market fit."}},
+  {n:3,t:"Discuss the Path",d:"If there is a fit, you can discuss a possible direct offer or another practical next step.",tm:"No Obligation",ico:"🤝",cond:{inherited:"A direct sale may be discussed if it fits the estate and ownership situation.",distressed:"A renovation purchase may be discussed if the numbers and condition make sense.",fastClose:"A direct-sale path may be discussed if timing and property fit line up."}},
+  {n:4,t:"Choose What Fits",d:"You decide whether to continue, pause, request more information, or discuss a traditional listing separately.",tm:"Your Decision",ico:"🏦",cond:{inherited:"The goal is a clean decision path for the estate, not pressure.",distressed:"The goal is a realistic option based on the property as it sits.",fastClose:"The goal is clarity quickly, without creating an obligation to sell."}},
 ];
 
 function Timeline(){
@@ -489,54 +534,6 @@ function Timeline(){
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// LOCATION PAGE
-// ═══════════════════════════════════════════════════════════════════
-function LocationPage({loc,goHome,goOffer}){
-  const[faqO,setFaqO]=useState(null);
-  useReveal();
-  return(<div className="pgf">
-    <section className="hero" style={{minHeight:"auto",paddingBottom:80}}>
-      <div className="o1" style={{position:"absolute",borderRadius:"50%",filter:"blur(90px)",animation:"orbF 20s ease-in-out infinite",width:450,height:450,background:`radial-gradient(circle,rgba(232,168,76,0.08),transparent 70%)`,top:"-5%",right:"-2%"}}/>
-      <div style={{maxWidth:1280,margin:"0 auto",position:"relative",zIndex:1}}>
-        <button onClick={goHome} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontFamily:"'Outfit',sans-serif",fontSize:14,display:"flex",alignItems:"center",gap:6,marginBottom:20}}><Ico.Back/> Back to Home</button>
-        <div style={{display:"inline-flex",alignItems:"center",gap:6,padding:"5px 12px",background:"rgba(232,168,76,0.06)",border:`1px solid rgba(232,168,76,0.12)`,borderRadius:6,fontSize:11,color:C.amber,fontWeight:600,marginBottom:20}}>
-          <span style={{width:6,height:6,borderRadius:"50%",background:C.green}}/>
-          Sanity CMS → /sell/{loc.slug}
-        </div>
-        <div className="sr">
-          <div className="sl"><Ico.Map/> Cash Home Buyers in {loc.city}</div>
-          <div style={{display:"flex",gap:6,marginBottom:12,flexWrap:"wrap"}}>
-            <span style={{fontSize:9,fontWeight:700,color:C.bg,background:C.amber,padding:"2px 7px",borderRadius:3}}>LocalBusiness</span>
-            <span style={{fontSize:9,fontWeight:700,color:C.green,background:C.greenBg,padding:"2px 7px",borderRadius:3}}>FAQPage</span>
-            <span style={{fontSize:9,fontWeight:700,color:C.muted,background:C.surface,padding:"2px 7px",borderRadius:3}}>BreadcrumbList</span>
-            <span style={{fontSize:9,fontWeight:700,color:C.amberD,background:"rgba(196,135,46,0.12)",padding:"2px 7px",borderRadius:3}}>WebPage</span>
-          </div>
-          <h1 className="st" style={{fontSize:"clamp(38px,5vw,58px)"}}>Sell Your Home Fast<br/>in <em>{loc.city}</em></h1>
-          <p style={{fontSize:18,color:C.muted,lineHeight:1.75,marginBottom:32,maxWidth:520}}>Get a fair cash offer on your {loc.city} home within 24 hours. No repairs, no showings, no agents. Serving ZIP codes {loc.zips.join(", ")} and surrounding areas.</p>
-          <button className="btn" onClick={goOffer}>Get Your {loc.city} Cash Offer <Ico.Arrow/></button>
-        </div>
-        <div className="loc-stats sr" data-delay="0.15s">
-          <div className="loc-stat"><div className="loc-sn" style={{color:C.amber}}>${loc.price}K</div><div className="loc-sl">Median Price</div></div>
-          <div className="loc-stat"><div className="loc-sn" style={{color:C.cream}}>{loc.days}</div><div className="loc-sl">Avg Days Listed</div></div>
-          <div className="loc-stat"><div className="loc-sn" style={{color:C.green}}>14</div><div className="loc-sl">Our Avg Close</div></div>
-        </div>
-      </div>
-    </section>
-    <section className="sec" style={{background:C.subtle}}>
-      <div className="sec-i"><div className="sh c sr"><div className="sl" style={{justifyContent:"center"}}>How It Works</div><h2 className="st">From Contact to <em>Closing</em></h2></div><Timeline/></div>
-    </section>
-    <section className="sec">
-      <div className="sec-i"><div className="sh c sr"><div className="sl" style={{justifyContent:"center"}}>Common Questions in {loc.city}</div><h2 className="st">Selling Your <em>{loc.city}</em> Home</h2></div>
-        <div className="faq-l">{FAQS.slice(0,5).map((f,i)=><div key={i} className={`fq ${faqO===i?"op":""} sr`} data-delay={`${i*0.06}s`}><button className="fq-q" onClick={()=>setFaqO(faqO===i?null:i)}>{f.q}<Ico.Chev/></button><div className="fq-aw"><div className="fq-a">{f.a}</div></div></div>)}</div>
-      </div>
-    </section>
-    <section className="sec" id="loc-form" style={{background:C.subtle}}>
-      <div className="sec-i"><div className="sh c sr"><div className="sl" style={{justifyContent:"center"}}>No Obligation</div><h2 className="st">Get Your Free <em>{loc.city}</em> Cash Offer</h2></div><div className="fw sr"><LeadForm/></div></div>
-    </section>
-  </div>);
-}
-
-// ═══════════════════════════════════════════════════════════════════
 // INSIGHTS PAGE
 // ═══════════════════════════════════════════════════════════════════
 function InsightsPage({goHome,goOffer}){
@@ -549,11 +546,11 @@ function InsightsPage({goHome,goOffer}){
   if(viewing){const p=viewing;return(<div className="pgf">
     <section style={{padding:"150px 24px 40px",maxWidth:740,margin:"0 auto"}}>
       <button onClick={()=>setViewing(null)} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontFamily:"'Outfit',sans-serif",fontSize:14,display:"flex",alignItems:"center",gap:6,marginBottom:28}}><Ico.Back/> Back to Insights</button>
-      {/* Schema indicator */}
-      <div style={{display:"flex",gap:8,marginBottom:20,flexWrap:"wrap"}}>
-        <span style={{fontSize:10,fontWeight:700,color:C.bg,background:C.amber,padding:"3px 8px",borderRadius:4}}>BlogPosting Schema</span>
-        <span style={{fontSize:10,fontWeight:700,color:C.green,background:C.greenBg,padding:"3px 8px",borderRadius:4}}>Article JSON-LD</span>
-        <span style={{fontSize:10,fontWeight:700,color:C.muted,background:C.surface,padding:"3px 8px",borderRadius:4}}>BreadcrumbList</span>
+	      {/* Content indicator */}
+	      <div style={{display:"flex",gap:8,marginBottom:20,flexWrap:"wrap"}}>
+	        <span style={{fontSize:10,fontWeight:700,color:C.bg,background:C.amber,padding:"3px 8px",borderRadius:4}}>Investor Review</span>
+	        <span style={{fontSize:10,fontWeight:700,color:C.green,background:C.greenBg,padding:"3px 8px",borderRadius:4}}>Local Context</span>
+	        <span style={{fontSize:10,fontWeight:700,color:C.muted,background:C.surface,padding:"3px 8px",borderRadius:4}}>Homeowner Guide</span>
       </div>
       <div style={{fontSize:11,color:C.dim,marginBottom:8}}>{p.cat} · {p.date} · {p.read} read</div>
       <h1 style={{fontFamily:"'DM Serif Display',serif",fontSize:"clamp(28px,4vw,42px)",color:C.cream,lineHeight:1.15,marginBottom:16}}>{p.title}</h1>
@@ -561,9 +558,9 @@ function InsightsPage({goHome,goOffer}){
       <div style={{height:240,borderRadius:16,background:p.grad,marginBottom:32}}/>
       {/* Simulated article body */}
       <div style={{fontSize:15,color:C.creamM,lineHeight:1.85}}>
-        <p style={{marginBottom:20}}>This content would be loaded dynamically from Sanity CMS in production. Each insight post supports rich text blocks, inline images, and custom components via Sanity's Portable Text.</p>
-        <p style={{marginBottom:20}}>The structured data injected on this page includes a complete BlogPosting schema with headline, datePublished, author (Organization), publisher with logo, articleSection, keywords array, and timeRequired calculated from the read time.</p>
-        <p>This enables rich search results, knowledge panel inclusion, and improved click-through rates from Google.</p>
+	        <p style={{marginBottom:20}}>This guide is meant to help homeowners understand when a property may be worth submitting for local investor review.</p>
+	        <p style={{marginBottom:20}}>Repairs, occupancy, rental potential, resale value, title status, seller timing, and neighborhood context all affect whether a direct purchase conversation makes sense.</p>
+	        <p>If a traditional listing appears to be a stronger path, that can be discussed separately instead of forcing an investor purchase.</p>
       </div>
       {/* SEO Keywords */}
       <div style={{marginTop:32,paddingTop:24,borderTop:`1px solid ${C.border}`}}>
@@ -572,9 +569,9 @@ function InsightsPage({goHome,goOffer}){
       </div>
       {/* CTA */}
       <div style={{marginTop:48,padding:"36px 28px",background:C.card,borderRadius:16,border:`1px solid ${C.border}`,textAlign:"center"}}>
-        <div className="st" style={{fontSize:22,marginBottom:8}}>Ready to Sell <em>Your</em> Home?</div>
-        <p style={{fontSize:14,color:C.muted,marginBottom:20}}>Get a no-obligation cash offer in 24 hours.</p>
-        <button className="btn-s" onClick={()=>{setViewing(null);goOffer();}}>Get Your Cash Offer <Ico.Arrow/></button>
+	        <div className="st" style={{fontSize:22,marginBottom:8}}>Have a Property to <em>Review</em>?</div>
+	        <p style={{fontSize:14,color:C.muted,marginBottom:20}}>Submit the basics for a local investor review.</p>
+	        <button className="btn-s" onClick={()=>{setViewing(null);goOffer();}}>Submit My Property <Ico.Arrow/></button>
       </div>
     </section>
   </div>);}
@@ -586,12 +583,12 @@ function InsightsPage({goHome,goOffer}){
         <button onClick={goHome} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontFamily:"'Outfit',sans-serif",fontSize:14,display:"inline-flex",alignItems:"center",gap:6,marginBottom:28}}><Ico.Back/> Back to Home</button>
         <div className="sl" style={{justifyContent:"center"}}><Ico.Book/> Insights & Guides</div>
         <h1 className="st" style={{textAlign:"center",marginBottom:14}}>Knowledge That <em>Empowers</em></h1>
-        <p className="ss" style={{textAlign:"center",margin:"0 auto 20px",maxWidth:500}}>Expert guidance on selling your home for cash, navigating inherited properties, and the Michigan real estate market.</p>
-        {/* Schema indicators */}
-        <div style={{display:"flex",gap:8,justifyContent:"center",marginBottom:28,flexWrap:"wrap"}}>
-          <span style={{fontSize:10,fontWeight:700,color:C.bg,background:C.amber,padding:"3px 8px",borderRadius:4}}>CollectionPage Schema</span>
-          <span style={{fontSize:10,fontWeight:700,color:C.green,background:C.greenBg,padding:"3px 8px",borderRadius:4}}>ItemList JSON-LD</span>
-          <span style={{fontSize:10,fontWeight:700,color:C.muted,background:C.surface,padding:"3px 8px",borderRadius:4}}>{filtered.length} Articles Indexed</span>
+	        <p className="ss" style={{textAlign:"center",margin:"0 auto 20px",maxWidth:500}}>Guidance on investor review, inherited properties, repairs, tenants, direct sale tradeoffs, and Oakland County market context.</p>
+	        {/* Content indicators */}
+	        <div style={{display:"flex",gap:8,justifyContent:"center",marginBottom:28,flexWrap:"wrap"}}>
+	          <span style={{fontSize:10,fontWeight:700,color:C.bg,background:C.amber,padding:"3px 8px",borderRadius:4}}>Investor Review</span>
+	          <span style={{fontSize:10,fontWeight:700,color:C.green,background:C.greenBg,padding:"3px 8px",borderRadius:4}}>Off-Market Deals</span>
+	          <span style={{fontSize:10,fontWeight:700,color:C.muted,background:C.surface,padding:"3px 8px",borderRadius:4}}>{filtered.length} Guides</span>
         </div>
         <div className="ins-f">{CATS.map(c=><button key={c} className={`insf ${cat===c?"act":""}`} onClick={()=>setCat(c)}>{c}</button>)}</div>
       </div>
@@ -603,9 +600,9 @@ function InsightsPage({goHome,goOffer}){
           <div className="ic-b"><div className="ic-m"><span>{p.date}</span><span>·</span><span>{p.read} read</span></div><div className="ic-t">{p.title}</div><p className="ic-ex">{p.ex}</p><span className="ic-r">Read article <Ico.Arrow s={14}/></span></div>
         </div>)}</div>
         <div style={{marginTop:72,padding:"44px 36px",background:C.card,borderRadius:18,border:`1px solid ${C.border}`,textAlign:"center"}} className="sr">
-          <div className="st" style={{fontSize:26,marginBottom:10}}>Ready to Sell Your Home <em>Today</em>?</div>
-          <p className="ss" style={{margin:"0 auto 24px",maxWidth:460}}>Whether you need to sell fast in Michigan, inherited a property, or want to sell as-is — we're here.</p>
-          <button className="btn" onClick={goOffer}>Get Your Free Cash Offer <Ico.Arrow/></button>
+	          <div className="st" style={{fontSize:26,marginBottom:10}}>Have a Property Worth <em>Reviewing</em>?</div>
+	          <p className="ss" style={{margin:"0 auto 24px",maxWidth:460}}>Inherited, vacant, tenant-occupied, repair-heavy, or off-market properties may be worth a direct investor conversation.</p>
+	          <button className="btn" onClick={goOffer}>Submit My Property <Ico.Arrow/></button>
         </div>
       </div>
     </section>
@@ -617,22 +614,26 @@ function InsightsPage({goHome,goOffer}){
 // ═══════════════════════════════════════════════════════════════════
 export default function App(){
   const[sc,setSc]=useState(false);const[mob,setMob]=useState(false);
-  const[page,setPage]=useState("home");const[locData,setLocData]=useState(null);
+  const[page,setPage]=useState("home");
   const[faqO,setFaqO]=useState(null);const[procA,setProcA]=useState(null);
 
   useReveal();
   useEffect(()=>{const fn=()=>setSc(window.scrollY>30);window.addEventListener("scroll",fn);return()=>window.removeEventListener("scroll",fn);},[]);
 
   const go=id=>{setMob(false);setTimeout(()=>document.getElementById(id)?.scrollIntoView({behavior:"smooth"}),60);};
-  const goPage=(p,data)=>{setMob(false);setPage(p);if(data)setLocData(data);window.scrollTo({top:0,behavior:"smooth"});};
+  const goPage=p=>{setMob(false);setPage(p);window.scrollTo({top:0,behavior:"smooth"});};
 
-  return(<IntentProvider><AppInner sc={sc} mob={mob} setMob={setMob} page={page} locData={locData} faqO={faqO} setFaqO={setFaqO} go={go} goPage={goPage}/></IntentProvider>);
+  return(<IntentProvider><AppInner sc={sc} mob={mob} setMob={setMob} page={page} faqO={faqO} setFaqO={setFaqO} go={go} goPage={goPage}/></IntentProvider>);
 }
 
-function AppInner({sc,mob,setMob,page,locData,faqO,setFaqO,go,goPage}){
+function AppInner({sc,mob,setMob,page,faqO,setFaqO,go,goPage}){
   const{intent,setIntent,content,INTENTS:I}=useIntent();
   const[ddOpen,setDdOpen]=useState(false);
   useReveal();
+  const homepageCta=(ctaLabel,target,leadType=intent)=>{
+    trackEvent("homepage_cta_clicked", {cta_label:ctaLabel,lead_type:leadType});
+    go(target);
+  };
 
   return(<div>
     <style>{css}</style>
@@ -644,33 +645,32 @@ function AppInner({sc,mob,setMob,page,locData,faqO,setFaqO,go,goPage}){
       <ul className="nav-l">
         <li className={`nl ${page==="home"?"act":""}`} onClick={()=>{goPage("home");setTimeout(()=>go("hero"),100);}}>Home</li>
         <li className="nl" onClick={()=>{if(page!=="home")goPage("home");setTimeout(()=>go("how"),200);}}>Process</li>
-        <li className="nl" onClick={()=>{if(page!=="home")goPage("home");setTimeout(()=>go("sit"),200);}}>Situations</li>
+	        <li className="nl" onClick={()=>{if(page!=="home")goPage("home");setTimeout(()=>go("sit"),200);}}>Property Types</li>
         <li className={`nl ${page==="insights"?"act":""}`} onClick={()=>goPage("insights")}>Insights</li>
         <li className="nl" style={{position:"relative"}} onClick={e=>{e.stopPropagation();setDdOpen(!ddOpen);}}>
           Areas ▾
           {ddOpen&&<div style={{position:"absolute",top:"100%",left:0,background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:8,minWidth:220,zIndex:10,boxShadow:"0 12px 40px rgba(0,0,0,0.5)",animation:"fade 0.2s var(--e) both"}}>
-            {LOCATIONS.map(l=><div key={l.slug} onClick={()=>{setDdOpen(false);goPage("location",l);}} style={{padding:"9px 14px",borderRadius:8,fontSize:13,color:C.creamM,cursor:"pointer",transition:"all 0.2s",display:"flex",alignItems:"center",justifyContent:"space-between"}} onMouseEnter={e=>{e.target.style.background=C.surface;e.target.style.color=C.cream;}} onMouseLeave={e=>{e.target.style.background="transparent";e.target.style.color=C.creamM;}}><span>{l.city}</span><span style={{fontSize:11,color:C.dim}}>{l.zips[0]}</span></div>)}
+            {LOCATIONS.map(l=><a key={l.slug} href={`/sell/${l.slug}`} onClick={e=>{e.stopPropagation();setDdOpen(false);}} style={{padding:"9px 14px",borderRadius:8,fontSize:13,color:C.creamM,cursor:"pointer",transition:"all 0.2s",display:"flex",alignItems:"center",justifyContent:"space-between"}} onMouseEnter={e=>{e.currentTarget.style.background=C.surface;e.currentTarget.style.color=C.cream;}} onMouseLeave={e=>{e.currentTarget.style.background="transparent";e.currentTarget.style.color=C.creamM;}}><span>{l.city}</span><span style={{fontSize:11,color:C.dim}}>{l.county.replace(" County","")}</span></a>)}
           </div>}
         </li>
         <li className="nl" onClick={()=>{if(page!=="home")goPage("home");setTimeout(()=>go("faq"),200);}}>FAQ</li>
-        <button className="ncta" onClick={()=>{if(page!=="home")goPage("home");setTimeout(()=>go("offer"),200);}}>Get Cash Offer</button>
+	        <button className="ncta" onClick={()=>{trackEvent("homepage_cta_clicked",{cta_label:"Submit Property",lead_type:intent});if(page!=="home")goPage("home");setTimeout(()=>go("offer"),200);}}>Submit Property</button>
       </ul>
       <button className="nmob" onClick={()=>setMob(!mob)}>{mob?<Ico.X/>:<Ico.Menu/>}</button>
     </div></nav>
     <div className={`mm ${mob?"op":""}`}>
       <div onClick={()=>{goPage("home");setTimeout(()=>go("hero"),100);}}>Home</div>
       <div onClick={()=>{goPage("home");setTimeout(()=>go("how"),200);}}>Process</div>
-      <div onClick={()=>{goPage("home");setTimeout(()=>go("sit"),200);}}>Situations</div>
+	      <div onClick={()=>{goPage("home");setTimeout(()=>go("sit"),200);}}>Property Types</div>
       <div onClick={()=>goPage("insights")}>Insights</div>
       <div onClick={()=>{if(page!=="home")goPage("home");setTimeout(()=>go("faq"),200);}}>FAQ</div>
-      <div onClick={()=>{if(page!=="home")goPage("home");setTimeout(()=>go("offer"),200);}} style={{color:C.amber,fontWeight:600}}>Get Cash Offer →</div>
+	      <div onClick={()=>{trackEvent("homepage_cta_clicked",{cta_label:"Mobile Submit Property",lead_type:intent});if(page!=="home")goPage("home");setTimeout(()=>go("offer"),200);}} style={{color:C.amber,fontWeight:600}}>Submit Property →</div>
     </div>
 
     {/* DROPDOWN CLOSER */}
     {ddOpen&&<div onClick={()=>setDdOpen(false)} style={{position:"fixed",inset:0,zIndex:99}}/>}
 
     {page==="insights"?<InsightsPage goHome={()=>goPage("home")} goOffer={()=>{goPage("home");setTimeout(()=>go("offer"),200);}}/>
-    :page==="location"&&locData?<LocationPage loc={locData} goHome={()=>goPage("home")} goOffer={()=>go("loc-form")}/>
     :(<div className="pgf">
 
     {/* HERO */}
@@ -678,61 +678,63 @@ function AppInner({sc,mob,setMob,page,locData,faqO,setFaqO,go,goPage}){
       <div className="orb o1"/><div className="orb o2"/><div className="orb o3"/>
       <div className="hero-i">
         <div className="hero-c">
-          <div className="hbadge"><span className="hdot"/>Oakland County's Trusted Buyers</div>
+	          <div className="hbadge"><span className="hdot"/>Local Michigan Realtor & Real Estate Investor</div>
           {content.badge&&<div className="ibadge" style={{marginBottom:16}}>✦ {content.badge}</div>}
           <h1 style={{whiteSpace:"pre-line"}}>{content.hero.includes("Cash")? <>{content.hero.split("Cash")[0]}<em>Cash</em>{content.hero.split("Cash")[1]}</>: content.hero.includes("?")? <>{content.hero}</>: <>{content.hero}</>}</h1>
           <p className="hero-s">{content.sub}</p>
-          <div className="hero-a"><button className="btn" onClick={()=>go("offer")}>{content.cta} <Ico.Arrow/></button><button className="btn btn-g" onClick={()=>go("how")}>See How It Works</button></div>
-          <div className="hero-p"><div className="hero-pi"><Ico.Check/> Zero Fees</div><div className="hero-pi"><Ico.Check/> Close in 14+ Days</div><div className="hero-pi"><Ico.Check/> Any Condition</div></div>
-        </div>
-        <div className="hero-v"><div className="oc"><div className="oc-b">✓ Offer Ready</div><div className="oc-l">Your Cash Offer</div><div className="oc-v">$285,000</div><div className="oc-loc"><span style={{color:C.amber}}>●</span> 48309 · Rochester Hills, MI</div><div className="oc-stats"><div className="oc-stat"><div className="oc-sn">14</div><div className="oc-sl">Days to Close</div></div><div className="oc-stat"><div className="oc-sn">$0</div><div className="oc-sl">Fees & Costs</div></div><div className="oc-stat"><div className="oc-sn">0</div><div className="oc-sl">Repairs</div></div></div><div className="oc-tl"><span style={{fontSize:12,color:C.muted}}>Timeline</span><div className="oc-tl-bar"><div className="oc-tl-fill"/></div><span style={{fontSize:12,fontWeight:600,color:C.amber}}>14 days</span></div></div></div>
+	          <div className="hero-a"><button className="btn" onClick={()=>homepageCta(content.cta,"offer")}>{content.cta} <Ico.Arrow/></button><button className="btn btn-g" onClick={()=>homepageCta("See What We Look For","features")}>See What We Look For</button></div>
+	          <div className="hero-p"><div className="hero-pi"><Ico.Check/> Local Review</div><div className="hero-pi"><Ico.Check/> Repairs & Tenants OK</div><div className="hero-pi"><Ico.Check/> No Obligation</div></div>
+	        </div>
+	        <div className="hero-v"><div className="oc"><div className="oc-b">✓ Review Ready</div><div className="oc-l">Investor Review Snapshot</div><div className="oc-v">Local Fit</div><div className="oc-loc"><span style={{color:C.amber}}>●</span> Oakland County, MI</div><div className="oc-stats"><div className="oc-stat"><div className="oc-sn">Rent</div><div className="oc-sl">Hold</div></div><div className="oc-stat"><div className="oc-sn">Fix</div><div className="oc-sl">Renovate</div></div><div className="oc-stat"><div className="oc-sn">Deal</div><div className="oc-sl">Direct</div></div></div><div className="oc-tl"><span style={{fontSize:12,color:C.muted}}>Review Focus</span><div className="oc-tl-bar"><div className="oc-tl-fill"/></div><span style={{fontSize:12,fontWeight:600,color:C.amber}}>fit first</span></div></div></div>
       </div>
     </section>
 
     {/* MARQUEE */}
     <div className="mq"><div className="mq-t">{[...Array(2)].map((_,r)=><Fragment key={r}>
-      {["No Agent Commissions","Close in 14–21 Days","Buy in Any Condition","Zero Closing Costs","Fair Market Offers","Local Oakland County Team","No Showings Required"].map(t=><span className="mq-i" key={t+r}><Ico.Check s={15}/> {t}</span>)}
+	      {["Local Investor Review","Rentals & Renovations","Inherited Properties","Tenant-Occupied Homes","Vacant Homes","Repair-Heavy Properties","Off-Market Opportunities"].map(t=><span className="mq-i" key={t+r}><Ico.Check s={15}/> {t}</span>)}
     </Fragment>)}</div></div>
 
     {/* BENTO FEATURES */}
     <section className="sec" id="features"><div className="sec-i">
-      <div className="sh c sr"><div className="sl">Why Choose Us</div><h2 className="st">The Simplest Way to <em>Sell</em></h2><p className="ss">Skip the traditional headaches. No agents, no open houses, no uncertainty.</p></div>
-      <div className="bento">
-        <div className="bc w sr"><div className="bico">🏠</div><div className="bt">Sell As-Is, No Exceptions</div><div className="bd">Foundation cracks, roof damage, fire, hoarding — we buy it all. You never spend a dollar on repairs or cleanup.</div></div>
-        <div className="bc sr" data-delay="0.1s"><div className="bstat"><Counter end={500} suffix="+"/></div><div className="bt">Homes Purchased</div><div className="bd">Across Oakland County since 2019.</div></div>
-        <div className="bc sr" data-delay="0.1s"><div className="bico">📅</div><div className="bt">Your Timeline, Your Terms</div><div className="bd">Close in 14 days or 60 — you pick the date. Need extra time? We'll work that out.</div></div>
-        <div className="bc sr" data-delay="0.15s"><div className="bico">🛡️</div><div className="bt">Transparent & Simple</div><div className="bd">Three steps. No hidden fees. No last-minute changes. The offer you accept is the cash you receive.</div></div>
-        <div className="bc sr" data-delay="0.2s"><div className="bico">⚡</div><div className="bt">24-Hour Offers</div><div className="bd">Tell us about your property and receive a no-obligation cash offer within one business day.</div></div>
+	      <div className="sh c sr"><div className="sl">What We Look For</div><h2 className="st">Local Investor <em>Review</em></h2><p className="ss">A direct way to see whether your property may fit a rental, renovation, flip, assignment, or off-market purchase.</p></div>
+	      <div className="bento">
+	        <div className="bc w sr"><div className="bico">🏠</div><div className="bt">Properties That Need Work</div><div className="bd">Deferred maintenance, roof issues, dated interiors, water damage, code concerns, or cleanup needs can all be reviewed honestly.</div></div>
+	        <div className="bc sr" data-delay="0.1s"><div className="bico">🔑</div><div className="bt">Inherited or Vacant Homes</div><div className="bd">Estate timing, vacancy, repairs, title status, and family decision-making can all shape the best path.</div></div>
+	        <div className="bc sr" data-delay="0.1s"><div className="bico">🏘️</div><div className="bt">Rental Potential</div><div className="bd">Some properties make sense as long-term rentals when location, condition, rent, and repair scope line up.</div></div>
+	        <div className="bc sr" data-delay="0.15s"><div className="bico">🛡️</div><div className="bt">Clear, Ethical Review</div><div className="bd">Not every property will receive an offer. If a listing may be better, that option can be discussed separately.</div></div>
+	        <div className="bc sr" data-delay="0.2s"><div className="bico">📋</div><div className="bt">Simple Property Intake</div><div className="bd">Share the property basics, occupancy, repairs, and timeline so the review starts with useful facts.</div></div>
       </div>
     </div></section>
 
     {/* PROCESS */}
     <section className="sec" id="how" style={{background:C.subtle}}><div className="sec-i">
-      <div className="sh c sr"><div className="sl">How It Works</div><h2 className="st">From Contact to <em>Closing</em></h2><p className="ss">A transparent process built around your needs.</p></div>
-      <Timeline/>
-      <div className="cbar sr" data-delay="0.15s">
-        <div className="ci"><div className="cn"><Counter end={500} suffix="+"/></div><div className="cl">Homes Purchased</div></div>
-        <div className="ci"><div className="cn"><Counter end={14}/></div><div className="cl">Avg Days to Close</div></div>
-        <div className="ci"><div className="cn"><Counter end={47} prefix="$" suffix="M+"/></div><div className="cl">Cash Offers Made</div></div>
-        <div className="ci"><div className="cn"><Counter end={98} suffix="%"/></div><div className="cl">Satisfaction Rate</div></div>
-      </div>
+	      <div className="sh c sr"><div className="sl">How It Works</div><h2 className="st">From Submission to <em>Review</em></h2><p className="ss">A transparent process for deciding whether a direct investor path makes sense.</p></div>
+	      <Timeline/>
+	      <div className="cbar sr" data-delay="0.15s">
+	        <div className="ci"><div className="cn">Rent</div><div className="cl">Hold Strategy</div></div>
+	        <div className="ci"><div className="cn">Flip</div><div className="cl">Renovation Fit</div></div>
+	        <div className="ci"><div className="cn">Deal</div><div className="cl">Off-Market Review</div></div>
+	        <div className="ci"><div className="cn">List?</div><div className="cl">Secondary Option</div></div>
+	      </div>
     </div></section>
 
     {/* SITUATIONS */}
     <section className="sec" id="sit"><div className="sec-i">
-      <div className="sh c sr"><div className="sl">Every Situation Welcome</div><h2 className="st">Whatever Your <em>Situation</em></h2><p className="ss">Every homeowner's story is different. Here are some we help with daily.</p></div>
-      <div className="paths">
-        <div className="pa sr" onClick={()=>{setIntent(I.DISTRESSED);go("offer");}}><span className="pa-e">🏚️</span><div className="pa-t">Distressed Property</div><div className="pa-d">Fire damage, foundation issues, code violations, or years of deferred maintenance. We buy homes traditional buyers won't touch.</div><span className="pa-l">Get an offer <Ico.Arrow s={14}/></span></div>
-        <div className="pa sr" data-delay="0.1s" onClick={()=>{setIntent(I.INHERITED);go("offer");}}><span className="pa-e">🔑</span><div className="pa-t">Inherited Home</div><div className="pa-d">Navigating probate while managing an inherited property is stressful. We simplify the sale — even out of state.</div><span className="pa-l">Get an offer <Ico.Arrow s={14}/></span></div>
-        <div className="pa sr" data-delay="0.2s" onClick={()=>{setIntent(I.FAST);go("offer");}}><span className="pa-e">⏱️</span><div className="pa-t">Urgent Timeline</div><div className="pa-d">Facing foreclosure, relocating, or divorce. When time is critical, we close fast so you can move forward.</div><span className="pa-l">Get an offer <Ico.Arrow s={14}/></span></div>
-      </div>
-    </div></section>
-
-    {/* TESTIMONIALS */}
-    <section className="sec" style={{background:C.subtle}}><div className="sec-i">
-      <div className="sh c sr"><div className="sl">Homeowner Stories</div><h2 className="st">Real Stories, <em>Real Results</em></h2></div>
-      <div className="tg">{TESTS.map((t,i)=><div className="tc sr" key={i} data-delay={`${i*0.1}s`}><div className="tc-s">{[...Array(5)].map((_,j)=><Ico.Star key={j}/>)}</div><div className="tc-t">"{t.text}"</div><div className="tc-a"><div className="tc-av" style={{background:t.bg}}>{t.init}</div><div><div className="tc-n">{t.name}</div><div className="tc-lo">{t.loc}</div></div></div></div>)}</div>
-    </div></section>
+	      <div className="sh c sr"><div className="sl">Property Types</div><h2 className="st">Properties Worth <em>Reviewing</em></h2><p className="ss">The best investor fits often start with a property that is difficult, dated, occupied, vacant, inherited, or not market-ready.</p></div>
+	      <div className="paths">
+	        <div className="pa sr" onClick={()=>{setIntent(I.DISTRESSED);homepageCta("Needs Repairs", "offer", I.DISTRESSED);}}><span className="pa-e">🏚️</span><div className="pa-t">Needs Repairs</div><div className="pa-d">Fire damage, water issues, foundation concerns, code items, or years of deferred maintenance can be reviewed for renovation fit.</div><span className="pa-l">Submit for review <Ico.Arrow s={14}/></span></div>
+	        <div className="pa sr" data-delay="0.1s" onClick={()=>{setIntent(I.INHERITED);homepageCta("Inherited or Vacant", "offer", I.INHERITED);}}><span className="pa-e">🔑</span><div className="pa-t">Inherited or Vacant</div><div className="pa-d">Estate properties, out-of-state ownership, vacancy, and family timing can be reviewed without preparing the home for market first.</div><span className="pa-l">Submit for review <Ico.Arrow s={14}/></span></div>
+	        <div className="pa sr" data-delay="0.2s" onClick={()=>{setIntent(I.FAST);homepageCta("Tenant or Timing Issues", "offer", I.FAST);}}><span className="pa-e">⏱️</span><div className="pa-t">Tenant or Timing Issues</div><div className="pa-d">Tenant-occupied homes, relocation, financial pressure, or a tight timeline may make a direct investor conversation worth exploring.</div><span className="pa-l">Submit for review <Ico.Arrow s={14}/></span></div>
+	      </div>
+	    </div></section>
+	
+	    {/* REVIEW FOCUS */}
+	    <section className="sec" style={{background:C.subtle}}><div className="sec-i">
+	      <div className="sh c sr"><div className="sl">Review Focus</div><h2 className="st">A Practical Local <em>Lens</em></h2></div>
+	      <div className="tg">
+	        {[{t:"Rental potential",d:"Could the property work as a long-term hold after repairs?"},{t:"Renovation spread",d:"Is there enough room between repair cost and resale value?"},{t:"Seller goals",d:"Does a direct review solve a real timing, repair, or occupancy problem?"}].map((x,i)=><div className="tc sr" key={x.t} data-delay={`${i*0.1}s`}><div className="tc-s" style={{color:C.amber,fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.08em"}}>Investor Criteria</div><div className="tc-t">{x.d}</div><div className="tc-a"><div className="tc-av" style={{background:i===0?C.amber:i===1?C.green:C.amberD}}>{i+1}</div><div><div className="tc-n">{x.t}</div><div className="tc-lo">Reviewed case by case</div></div></div></div>)}
+	      </div>
+	    </div></section>
 
     {/* FAQ */}
     <section className="sec" id="faq"><div className="sec-i">
@@ -742,7 +744,7 @@ function AppInner({sc,mob,setMob,page,locData,faqO,setFaqO,go,goPage}){
 
     {/* LEAD FORM */}
     <section className="sec" id="offer" style={{background:`linear-gradient(180deg,${C.bg},${C.subtle})`}}><div className="sec-i">
-      <div className="sh c sr"><div className="sl">No Obligation</div><h2 className="st">Get Your Free <em>Cash Offer</em></h2><p className="ss">Tell us about your property. We'll respond within 24 hours. Zero fees, zero pressure.</p></div>
+	      <div className="sh c sr"><div className="sl">No Obligation</div><h2 className="st">Submit Your Property for <em>Review</em></h2><p className="ss">Tell me about the property, repairs, occupancy, and timing. Not every property will receive an offer.</p></div>
       <div className="fw sr"><LeadForm/></div>
     </div></section>
 
@@ -751,12 +753,13 @@ function AppInner({sc,mob,setMob,page,locData,faqO,setFaqO,go,goPage}){
     {/* FOOTER */}
     <footer className="foot"><div className="foot-i">
       <div className="foot-g">
-        <div><div className="foot-b">Oakland<span>Cash</span></div><p className="foot-d">Michigan's trusted cash home buyers. Sell quickly, fairly, and without the traditional hassles.</p></div>
-        <div><div className="foot-h">Company</div><ul className="foot-ul"><li><a href="#" onClick={e=>{e.preventDefault();goPage("home");}}>Home</a></li><li><a href="#" onClick={e=>{e.preventDefault();goPage("home");setTimeout(()=>go("how"),200);}}>How It Works</a></li><li><a href="#" onClick={e=>{e.preventDefault();goPage("home");setTimeout(()=>go("sit"),200);}}>Reviews</a></li><li><a href="#" onClick={e=>{e.preventDefault();goPage("insights");}}>Insights</a></li></ul></div>
-        <div><div className="foot-h">Areas</div><ul className="foot-ul">{LOCATIONS.slice(0,5).map(l=><li key={l.slug}><a href="#" onClick={e=>{e.preventDefault();goPage("location",l);}}>{l.city}</a></li>)}</ul></div>
+	        <div><div className="foot-b">Oakland<span>Cash</span></div><p className="foot-d">Local Oakland County property review for possible direct investor purchases, rentals, renovations, and off-market opportunities.</p></div>
+	        <div><div className="foot-h">Company</div><ul className="foot-ul"><li><a href="#" onClick={e=>{e.preventDefault();goPage("home");}}>Home</a></li><li><a href="#" onClick={e=>{e.preventDefault();goPage("home");setTimeout(()=>go("how"),200);}}>How It Works</a></li><li><a href="#" onClick={e=>{e.preventDefault();goPage("home");setTimeout(()=>go("sit"),200);}}>Property Types</a></li><li><a href="#" onClick={e=>{e.preventDefault();goPage("insights");}}>Insights</a></li></ul></div>
+        <div><div className="foot-h">Areas</div><ul className="foot-ul">{LOCATIONS.map(l=><li key={l.slug}><a href={`/sell/${l.slug}`}>{l.city}</a></li>)}</ul></div>
         <div><div className="foot-h">Contact</div><ul className="foot-ul"><li><a href="tel:+12485550100">(248) 555-0100</a></li><li><a href="mailto:info@oaklandcash.com">info@oaklandcash.com</a></li><li><a>Oakland County, MI</a></li></ul></div>
       </div>
-      <div className="foot-bot"><div className="foot-c">© 2026 OaklandCash. All rights reserved.</div><div className="foot-bgs"><span className="foot-bg">BBB A+ Rated</span><span className="foot-bg">Licensed & Insured</span></div></div>
+	      <p className="foot-dis">{DISCLOSURE}</p>
+	      <div className="foot-bot"><div className="foot-c">© 2026 OaklandCash. All rights reserved.</div><div className="foot-bgs"><span className="foot-bg">Licensed Michigan real estate professional</span><span className="foot-bg">Investor review, not an obligation</span></div></div>
     </div></footer>
   </div>);
 }
