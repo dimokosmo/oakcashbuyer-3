@@ -38,6 +38,33 @@ const value = (input: unknown) =>
 
 const shown = (input: string | undefined) => input || "Not provided";
 
+const escapeRegExp = (input: string) =>
+  input.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+function displayAddress(address: string, city: string) {
+  if (!address || !city) {
+    return address;
+  }
+
+  const trailingCity = new RegExp(
+    `(?:,\\s*|\\s+)${escapeRegExp(city)}\\s*,?\\s*$`,
+    "i"
+  );
+  const cleaned = address.replace(trailingCity, "").trim();
+
+  return cleaned || address;
+}
+
+function formatPhoneForDisplay(phone: string) {
+  const digits = phone.replace(/\D/g, "");
+
+  if (digits.length !== 10) {
+    return phone;
+  }
+
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+}
+
 const smsValue = (input: string | undefined, maxLength: number) => {
   const clean = shown(input).replace(/\s+/g, " ");
   return clean.length > maxLength ? `${clean.slice(0, maxLength - 1)}...` : clean;
@@ -225,16 +252,17 @@ function notificationPriority(data: LeadData) {
 
 function buildNotificationText(data: LeadData) {
   const sellerName = `${data.firstName} ${data.lastName}`.trim();
+  const propertyDisplayAddress = displayAddress(data.address, data.city);
 
   return [
-    `New Investor Property Review: ${data.address}, ${data.city}`,
+    `New Investor Property Review: ${propertyDisplayAddress}, ${data.city}`,
     "",
     notificationPriority(data),
     "",
     `Investor fit result: ${data.investorFit}`,
     `Investor fit score: ${data.investorFitScore}`,
     "",
-    "Property",
+    "Property Details",
     `Address: ${data.address}`,
     `City/state/ZIP: ${data.city}, ${data.state} ${data.zip}`,
     `Property type: ${shown(data.propertyType)}`,
@@ -246,9 +274,9 @@ function buildNotificationText(data: LeadData) {
     `Main goal: ${shown(data.mainGoal)}`,
     `Ownership situation: ${shown(data.ownership)}`,
     "",
-    "Seller",
+    "Seller Contact",
     `Name: ${sellerName}`,
-    `Phone: ${shown(data.phone)}`,
+    `Phone: ${shown(formatPhoneForDisplay(data.phone))}`,
     `Email: ${shown(data.email)}`,
     `Preferred contact method: ${shown(data.preferredContactMethod)}`,
     `Best time to reach: ${shown(data.bestTimeToReach)}`,
@@ -261,10 +289,11 @@ function buildNotificationText(data: LeadData) {
 async function createClickUpTask(data: LeadData) {
   const apiKey = process.env.CLICKUP_API_KEY!;
   const listId = process.env.CLICKUP_LIST_ID!;
+  const propertyDisplayAddress = displayAddress(data.address, data.city);
 
   // Future ClickUp custom field IDs can be mapped here when the target list schema is finalized.
   const payload = {
-    name: `Investor Property Review: ${data.address}, ${data.city}`,
+    name: `Investor Property Review: ${propertyDisplayAddress}, ${data.city}`,
     description: buildTaskDescription(data),
     tags: buildClickUpTags(data),
   };
@@ -293,6 +322,7 @@ async function createClickUpTask(data: LeadData) {
 async function sendLeadNotification(data: LeadData) {
   const apiKey = process.env.RESEND_API_KEY;
   const recipient = process.env.LEAD_NOTIFICATION_EMAIL;
+  const propertyDisplayAddress = displayAddress(data.address, data.city);
 
   if (!apiKey || !recipient) {
     if (process.env.NODE_ENV !== "production") {
@@ -305,7 +335,7 @@ async function sendLeadNotification(data: LeadData) {
   const payload = {
     from: "OaklandCash Leads <onboarding@resend.dev>",
     to: recipient,
-    subject: `New Investor Property Review: ${data.address}, ${data.city}`,
+    subject: `New Investor Property Review: ${propertyDisplayAddress}, ${data.city}`,
     text: buildNotificationText(data),
   };
 
@@ -330,12 +360,13 @@ async function sendLeadNotification(data: LeadData) {
 }
 
 function buildSmsMessage(data: LeadData) {
+  const propertyDisplayAddress = displayAddress(data.address, data.city);
   const contact = data.phone
-    ? `Call/Text: ${smsValue(data.phone, 24)}`
+    ? `Call/Text: ${smsValue(formatPhoneForDisplay(data.phone), 24)}`
     : `Email: ${smsValue(data.email, 34)}`;
 
   return [
-    `New OaklandCash lead: ${smsValue(data.investorFit, 22)} - ${smsValue(data.address, 32)}, ${smsValue(data.city, 18)}.`,
+    `New OaklandCash lead: ${smsValue(data.investorFit, 22)} - ${smsValue(propertyDisplayAddress, 32)}, ${smsValue(data.city, 18)}.`,
     `Seller: ${smsValue(data.firstName, 18)}.`,
     `${contact}.`,
     `Goal: ${smsValue(data.mainGoal, 34)}.`,
