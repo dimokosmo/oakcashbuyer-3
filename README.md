@@ -11,11 +11,12 @@ Set these in Vercel before launch.
 ### Required for Launch
 
 - `NEXT_PUBLIC_SITE_URL`: Final production URL, used for sitemap and robots output.
-- `CLICKUP_API_KEY`: ClickUp API key for task creation.
-- `CLICKUP_LIST_ID`: ClickUp list ID where valid leads should become tasks.
 
 ### Recommended for Launch
 
+- `ENABLE_CLICKUP_LEADS`: Set to `false` to intentionally disable ClickUp task creation. Set to `true` with both ClickUp credentials to enable it. If omitted, ClickUp retains its legacy behavior and runs only when both credentials are present.
+- `CLICKUP_API_KEY`: ClickUp API key for task creation when ClickUp leads are enabled.
+- `CLICKUP_LIST_ID`: ClickUp list ID where valid leads should become tasks when ClickUp leads are enabled.
 - `RESEND_API_KEY`: Resend API key for lead notification emails.
 - `LEAD_NOTIFICATION_EMAIL`: Recipient email for lead notifications.
 - `TWILIO_ACCOUNT_SID`: Twilio account SID for SMS alerts.
@@ -63,13 +64,13 @@ Use obvious test data and avoid real homeowner personal information during local
 
 ## Confirm ClickUp Task Creation
 
-1. Set `CLICKUP_API_KEY` and `CLICKUP_LIST_ID` in the environment.
+1. Set `ENABLE_CLICKUP_LEADS=true`, `CLICKUP_API_KEY`, and `CLICKUP_LIST_ID` in the environment.
 2. Submit a valid test lead.
 3. Open the configured ClickUp list.
 4. Confirm a task named like `Investor Property Review: [Address], [City]`.
 5. Confirm the task description includes investor fit, property details, seller contact details, source, and timestamp.
 
-If ClickUp is not configured or fails, valid leads still return success to the homeowner.
+Set `ENABLE_CLICKUP_LEADS=false` to disable ClickUp task creation while allowing email and SMS notifications to continue. To re-enable it later, set the value to `true` and provide both ClickUp credentials. If the toggle is omitted, the app attempts ClickUp only when both credentials exist. Missing credentials or ClickUp failures never block a valid lead.
 
 ## Confirm Email Notification
 
@@ -128,7 +129,7 @@ The sitemap includes the homepage and real `/sell/[city]` SEO pages. It intentio
 - Confirm all 15 `/sell/[city]` pages build and load.
 - Confirm the homepage form submits successfully.
 - Confirm successful submissions redirect to `/thank-you`.
-- Confirm ClickUp task creation with a test lead.
+- Confirm ClickUp is intentionally disabled, or confirm task creation with a test lead.
 - Confirm Resend email notification if enabled.
 - Confirm Twilio SMS notification if enabled.
 - Confirm GA4 events fire without personal information.

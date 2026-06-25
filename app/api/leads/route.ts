@@ -191,6 +191,28 @@ function buildClickUpTags(data: LeadData) {
   return Array.from(tags);
 }
 
+function shouldCreateClickUpTask() {
+  const clickUpSetting = process.env.ENABLE_CLICKUP_LEADS?.trim().toLowerCase();
+  const hasCredentials =
+    Boolean(process.env.CLICKUP_API_KEY) && Boolean(process.env.CLICKUP_LIST_ID);
+
+  if (clickUpSetting === "false") {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("[Lead] ClickUp lead creation disabled; skipping task creation.");
+    }
+    return false;
+  }
+
+  if (!hasCredentials) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("[Lead] ClickUp not configured; skipping task creation.");
+    }
+    return false;
+  }
+
+  return true;
+}
+
 function notificationPriority(data: LeadData) {
   if (data.investorFit === "Strong Potential Fit") {
     return "Priority: Strong potential investor fit.";
@@ -237,15 +259,8 @@ function buildNotificationText(data: LeadData) {
 }
 
 async function createClickUpTask(data: LeadData) {
-  const apiKey = process.env.CLICKUP_API_KEY;
-  const listId = process.env.CLICKUP_LIST_ID;
-
-  if (!apiKey || !listId) {
-    if (process.env.NODE_ENV !== "production") {
-      console.warn("[Lead] ClickUp not configured; skipping task creation.");
-    }
-    return;
-  }
+  const apiKey = process.env.CLICKUP_API_KEY!;
+  const listId = process.env.CLICKUP_LIST_ID!;
 
   // Future ClickUp custom field IDs can be mapped here when the target list schema is finalized.
   const payload = {
@@ -388,7 +403,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    await createClickUpTask(data);
+    if (shouldCreateClickUpTask()) {
+      await createClickUpTask(data);
+    }
     await sendLeadNotification(data);
     await sendSmsNotification(data);
 
