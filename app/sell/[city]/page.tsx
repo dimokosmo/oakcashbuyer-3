@@ -9,7 +9,7 @@ type PageProps = {
 };
 
 const disclosure =
-  "Dimitrios Kosmidis is a licensed Michigan real estate professional and real estate investor. This site is intended for homeowners interested in a possible direct sale, investor purchase, or off-market property review. Not every property will receive an offer. Submitting a property does not create an agency relationship or obligation to sell. If a traditional listing appears to be a better fit, that option may be discussed separately.";
+  "Proper Home Options is not an appraisal, lender, legal advisor, tax advisor, or financial advisor. Dimitri Kosmidis is a licensed Michigan real estate professional and real estate investor. Dimitri or his investor network may be interested in purchasing some properties, and other options may involve separate professionals. Submitting information creates no agency relationship or obligation to use any option.";
 
 const reviewFocus = [
   "Fixer-uppers",
@@ -34,19 +34,19 @@ export async function generateMetadata({
 
   if (!location) {
     return {
-      title: "Investor Property Review | OaklandCash",
+      title: "Michigan Home Options | Proper Home Options",
     };
   }
 
   return {
-    title: `Investor Property Review in ${location.city}, ${location.state} | OaklandCash`,
-    description: `Submit a ${location.city} property for local investor review. Good fit for fixer-uppers, inherited homes, tenant-occupied properties, vacant homes, and homes needing repairs.`,
+    title: `Home Selling Options in ${location.city}, ${location.state} | Proper Home Options`,
+    description: `Compare cash-sale, traditional-listing, refinance-conversation, rental, repair, and hold options for a ${location.city} property.`,
     alternates: {
       canonical: `/sell/${location.slug}`,
     },
     openGraph: {
-      title: `Investor Property Review in ${location.city}, ${location.state} | OaklandCash`,
-      description: `Submit a ${location.city} property for local investor review focused on repairs, occupancy, timing, rental potential, and renovation fit.`,
+      title: `Home Selling Options in ${location.city}, ${location.state} | Proper Home Options`,
+      description: `Start a Proper Review for a ${location.city} property based on condition, timing, and homeowner goals.`,
       type: "website",
       url: `/sell/${location.slug}`,
     },
@@ -64,19 +64,18 @@ export default async function CityPropertyReviewPage({ params }: PageProps) {
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "WebPage",
-    name: `Investor Property Review in ${location.city}, ${location.state}`,
-    description: `Local investor property review for ${location.city} homes that may need repairs, have tenants, be vacant, inherited, or better suited for an off-market conversation.`,
-    url: `https://oaklandcash.com/sell/${location.slug}`,
+    name: `The Proper Review in ${location.city}, ${location.state}`,
+    description: `Practical property-option review for ${location.city} homeowners comparing a sale, refinance conversation, rental, repair, or hold strategy.`,
     about: {
       "@type": "Service",
-      name: "Local investor property review",
+      name: "The Proper Review",
       areaServed: {
         "@type": "City",
         name: `${location.city}, ${location.state}`,
       },
       provider: {
-        "@type": "RealEstateAgent",
-        name: "Dimitrios Kosmidis",
+        "@type": "Person",
+        name: "Dimitri Kosmidis",
       },
     },
   };
@@ -84,42 +83,40 @@ export default async function CityPropertyReviewPage({ params }: PageProps) {
   return (
     <main className="city-page">
       <style>{`
-        .city-page{min-height:100vh;background:#0C0C0C;color:#E8E4DC;font-family:'Outfit',sans-serif;overflow:hidden;}
+        .city-page{min-height:100vh;background:#F7F4EE;color:#1D2A25;font-family:'Outfit',sans-serif;overflow:hidden;}
         .city-wrap{max-width:1180px;margin:0 auto;padding:0 24px;position:relative;z-index:1;}
-        .city-hero{position:relative;padding:150px 0 82px;border-bottom:1px solid rgba(255,255,255,0.06);}
-        .city-hero::before{content:'';position:absolute;width:620px;height:620px;border-radius:50%;background:radial-gradient(circle,rgba(232,168,76,0.12),transparent 70%);filter:blur(90px);top:-190px;right:-170px;}
-        .city-hero::after{content:'';position:absolute;width:420px;height:420px;border-radius:50%;background:radial-gradient(circle,rgba(245,240,232,0.04),transparent 70%);filter:blur(90px);bottom:0;left:-160px;}
-        .city-back{display:inline-flex;align-items:center;color:#9A948A;font-size:13px;margin-bottom:30px;transition:color 0.2s ease;}
-        .city-back:hover{color:#E8A84C;}
-        .city-kicker{display:inline-flex;align-items:center;gap:10px;color:#E8A84C;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;padding:8px 14px;border:1px solid rgba(232,168,76,0.18);border-radius:999px;background:rgba(232,168,76,0.05);margin-bottom:24px;}
-        .city-dot{width:7px;height:7px;border-radius:50%;background:#E8A84C;}
+        .city-hero{position:relative;padding:130px 0 82px;border-bottom:1px solid #D9DED8;background:#E7EEE9;}
+        .city-back{display:inline-flex;align-items:center;color:#657169;font-size:13px;margin-bottom:30px;transition:color 0.2s ease;}
+        .city-back:hover{color:#365347;}
+        .city-kicker{display:inline-flex;align-items:center;gap:10px;color:#527264;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;padding:8px 14px;border:1px solid #C5D3CA;border-radius:999px;background:#F7F4EE;margin-bottom:24px;}
+        .city-dot{width:7px;height:7px;border-radius:50%;background:#527264;}
         .city-hero-grid{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:54px;align-items:end;}
-        h1{font-family:'DM Serif Display',serif;font-size:clamp(42px,6.5vw,76px);line-height:1.02;letter-spacing:0;color:#F5F0E8;margin:0 0 22px;max-width:840px;}
-        h1 em,.city-title em{font-style:italic;color:#E8A84C;}
-        .city-lede{font-size:18px;line-height:1.78;color:#9A948A;max-width:740px;margin:0 0 32px;}
+        h1{font-family:'DM Serif Display',serif;font-size:clamp(42px,6.5vw,76px);line-height:1.02;letter-spacing:0;color:#1D2A25;margin:0 0 22px;max-width:840px;}
+        h1 em,.city-title em{font-style:italic;color:#527264;}
+        .city-lede{font-size:18px;line-height:1.78;color:#56645D;max-width:740px;margin:0 0 32px;}
         .city-actions{display:flex;gap:12px;flex-wrap:wrap;}
         .city-btn{display:inline-flex;align-items:center;justify-content:center;min-height:50px;padding:0 22px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;transition:all 0.25s ease;}
-        .city-btn-primary{background:#E8A84C;color:#0C0C0C;}
-        .city-btn-primary:hover{background:#F2C97E;transform:translateY(-1px);}
-        .city-btn-secondary{border:1px solid rgba(255,255,255,0.12);color:#F5F0E8;background:transparent;}
-        .city-btn-secondary:hover{border-color:#E8A84C;color:#E8A84C;}
-        .city-panel{background:#151515;border:1px solid rgba(255,255,255,0.06);border-radius:18px;padding:24px;box-shadow:0 24px 70px rgba(0,0,0,0.25);}
-        .city-panel-label{font-size:11px;color:#E8A84C;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:14px;}
-        .city-panel p{font-size:14px;line-height:1.7;color:#D4CCBC;margin:0;}
+        .city-btn-primary{background:#365347;color:#fff;}
+        .city-btn-primary:hover{background:#2C463B;transform:translateY(-1px);}
+        .city-btn-secondary{border:1px solid #BFCAC3;color:#1D2A25;background:transparent;}
+        .city-btn-secondary:hover{border-color:#527264;color:#365347;}
+        .city-panel{background:#FFFDF9;border:1px solid #D9DED8;border-radius:10px;padding:24px;box-shadow:0 24px 70px rgba(29,42,37,0.08);}
+        .city-panel-label{font-size:11px;color:#527264;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:14px;}
+        .city-panel p{font-size:14px;line-height:1.7;color:#56645D;margin:0;}
         .city-nearby{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px;}
-        .city-chip{font-size:12px;color:#D4CCBC;background:#111111;border:1px solid rgba(255,255,255,0.06);border-radius:999px;padding:7px 10px;}
-        .city-section{padding:84px 0;border-bottom:1px solid rgba(255,255,255,0.06);}
-        .city-section.alt{background:#111111;}
+        .city-chip{font-size:12px;color:#34453E;background:#E7EEE9;border:1px solid #D9DED8;border-radius:999px;padding:7px 10px;}
+        .city-section{padding:84px 0;border-bottom:1px solid #D9DED8;}
+        .city-section.alt{background:#FFFDF9;}
         .city-section .city-wrap{display:grid;grid-template-columns:0.72fr 1.28fr;gap:54px;align-items:start;}
-        .city-eyebrow{font-size:11px;color:#E8A84C;text-transform:uppercase;letter-spacing:0.14em;font-weight:700;margin-bottom:13px;}
-        .city-title{font-family:'DM Serif Display',serif;font-size:clamp(32px,4.6vw,52px);line-height:1.1;color:#F5F0E8;margin:0;}
-        .city-copy{font-size:16px;line-height:1.8;color:#9A948A;margin:0 0 22px;}
+        .city-eyebrow{font-size:11px;color:#527264;text-transform:uppercase;letter-spacing:0.14em;font-weight:700;margin-bottom:13px;}
+        .city-title{font-family:'DM Serif Display',serif;font-size:clamp(32px,4.6vw,52px);line-height:1.1;color:#1D2A25;margin:0;}
+        .city-copy{font-size:16px;line-height:1.8;color:#657169;margin:0 0 22px;}
         .city-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:0;padding:0;list-style:none;}
-        .city-card{background:#151515;border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:16px 16px;color:#D4CCBC;font-size:14px;line-height:1.55;}
-        .city-card strong{display:block;color:#F5F0E8;font-size:15px;margin-bottom:5px;}
-        .city-note{background:linear-gradient(135deg,rgba(232,168,76,0.08),rgba(21,21,21,0.92));border:1px solid rgba(232,168,76,0.16);border-radius:18px;padding:30px;}
-        .city-note p{font-size:15px;line-height:1.75;color:#D4CCBC;margin:0;}
-        .city-disclosure{font-size:12px;line-height:1.8;color:#6B665E;margin:22px 0 0;}
+        .city-card{background:#FFFDF9;border:1px solid #D9DED8;border-radius:8px;padding:16px 16px;color:#56645D;font-size:14px;line-height:1.55;}
+        .city-card strong{display:block;color:#1D2A25;font-size:15px;margin-bottom:5px;}
+        .city-note{background:#E7EEE9;border:1px solid #CAD7CF;border-radius:10px;padding:30px;}
+        .city-note p{font-size:15px;line-height:1.75;color:#34453E;margin:0;}
+        .city-disclosure{font-size:12px;line-height:1.8;color:#657169;margin:22px 0 0;}
         .city-final{padding:76px 0 92px;text-align:center;}
         .city-final .city-title{max-width:760px;margin:0 auto 16px;}
         .city-final p{max-width:660px;margin:0 auto 26px;}
@@ -133,46 +130,44 @@ export default async function CityPropertyReviewPage({ params }: PageProps) {
       <section className="city-hero">
         <div className="city-wrap">
           <Link className="city-back" href="/">
-            Back to OaklandCash
+            Back to Proper Home Options
           </Link>
           <div className="city-hero-grid">
             <div>
               <div className="city-kicker">
                 <span className="city-dot" />
-                {location.city}, {location.state} property review
+                {location.city}, {location.state} home options
               </div>
               <h1>
-                Submit a {location.city} Property for Local Investor Review
+                Compare Your Property Options in {location.city}
               </h1>
               <p className="city-lede">
-                If you own a property in {location.city} that needs repairs,
-                has tenants, is vacant, was inherited, or may be better suited
-                for an off-market investor conversation, you can submit it for
-                local review. I evaluate properties for rental, renovation, and
-                investment potential across {location.city} and the surrounding
-                area.
+                If you own a property in {location.city}, you may have more than
+                one practical path. Compare a possible cash sale, traditional
+                listing, refinance conversation, rental, repair, or hold
+                strategy based on the property and your goals.
               </p>
               <div className="city-actions">
                 <CityCtaLink
                   className="city-btn city-btn-primary"
-                  href="/#offer"
+                  href="/#report"
                   citySlug={location.slug}
-                  ctaLabel="Submit My Property"
+                  ctaLabel="Start My Proper Review"
                 >
-                  Submit My Property
+                  Start My Proper Review
                 </CityCtaLink>
                 <CityCtaLink
                   className="city-btn city-btn-secondary"
-                  href="/#features"
+                  href="/#options"
                   citySlug={location.slug}
-                  ctaLabel="See What I Look For"
+                  ctaLabel="Compare My Options"
                 >
-                  See What I Look For
+                  Compare My Options
                 </CityCtaLink>
               </div>
             </div>
             <aside className="city-panel">
-              <div className="city-panel-label">Local review context</div>
+              <div className="city-panel-label">Local property context</div>
               <p>{location.shortIntro}</p>
               <div className="city-nearby">
                 {location.nearbyAreas.map((area) => (
@@ -189,24 +184,23 @@ export default async function CityPropertyReviewPage({ params }: PageProps) {
       <section className="city-section">
         <div className="city-wrap">
           <div>
-            <div className="city-eyebrow">What I Look For</div>
+            <div className="city-eyebrow">Options Worth Comparing</div>
             <h2 className="city-title">
-              Investor Review in <em>{location.city}</em>
+              A Practical Review in <em>{location.city}</em>
             </h2>
           </div>
           <div>
             <p className="city-copy">
-              The goal is not to force every property into the same answer. I
-              look at condition, occupancy, repair scope, location, rental
-              potential, resale potential, timing, and whether a direct
-              investor conversation solves a real problem for the owner.
+              The goal is not to force every property into the same answer.
+              Condition, occupancy, repair scope, location, equity, timing, and
+              homeowner priorities can make different paths worth considering.
             </p>
             <ul className="city-list">
               {reviewFocus.map((item) => (
                 <li className="city-card" key={item}>
                   <strong>{item}</strong>
-                  Reviewed case by case based on condition, timing, and
-                  investment fit.
+                  Considered alongside listing, financing, rental, repair, and
+                  direct-sale tradeoffs.
                 </li>
               ))}
             </ul>
@@ -240,17 +234,16 @@ export default async function CityPropertyReviewPage({ params }: PageProps) {
           <div>
             <div className="city-eyebrow">Case-by-Case Review</div>
             <h2 className="city-title">
-              Not Every Property Is a <em>Fit</em>
+              No Single Path Fits <em>Every Homeowner</em>
             </h2>
           </div>
           <div className="city-note">
             <p>
-              Submitting a {location.city} property starts a review, not an
-              obligation and not an offer promise. Some properties may fit a
-              direct investor purchase, rental hold, renovation, flip, or
-              off-market assignment. Others may need more information or may be
-              better suited for another path, including a traditional listing if
-              that appears to serve the owner better.
+              Requesting a report starts a review, not an obligation or offer
+              promise. A direct purchase may fit some properties. Other
+              homeowners may benefit from comparing a traditional listing,
+              refinance conversation, rental, repair, hold strategy, or another
+              provider before making a decision.
             </p>
             <p className="city-disclosure">{disclosure}</p>
           </div>
@@ -260,22 +253,21 @@ export default async function CityPropertyReviewPage({ params }: PageProps) {
       <section className="city-final">
         <div className="city-wrap">
           <h2 className="city-title">
-            Have a {location.city} Property to <em>Review?</em>
+            Ready to Compare Your {location.city} <em>Property Options?</em>
           </h2>
           <p className="city-copy">
-            Share the basics about condition, occupancy, repairs, ownership,
-            and timeline. I will review the details and follow up if the
-            property appears to fit current rental, renovation, or investor
-            purchase criteria.
+            Share the basics about condition, timing, and what matters most.
+            Dimitri will review the details and follow up with practical paths
+            that may deserve a closer look.
           </p>
           <div className="city-actions" style={{ justifyContent: "center" }}>
             <CityCtaLink
               className="city-btn city-btn-primary"
-              href="/#offer"
+              href="/#report"
               citySlug={location.slug}
-              ctaLabel="Submit My Property"
+              ctaLabel="Start My Proper Review"
             >
-              Submit My Property
+              Start My Proper Review
             </CityCtaLink>
             <Link className="city-btn city-btn-secondary" href="/">
               Return Home

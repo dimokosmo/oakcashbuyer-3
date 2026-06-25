@@ -9,8 +9,10 @@ type LeadData = {
   condition: string;
   knownIssues: string;
   repairsNeeded: string;
+  considering: string;
   timeline: string;
   mainGoal: string;
+  mortgageBalance: string;
   ownership: string;
   occupancy: string;
   firstName: string;
@@ -25,6 +27,13 @@ type LeadData = {
   submittedAt: string;
   source: string;
   sourcePage: string;
+  utm_source: string;
+  utm_medium: string;
+  utm_campaign: string;
+  utm_content: string;
+  utm_term: string;
+  landing_page: string;
+  referrer: string;
   probateStatus?: string;
   outOfState?: string;
   damageType?: string;
@@ -35,6 +44,9 @@ type LeadData = {
 
 const value = (input: unknown) =>
   typeof input === "string" ? input.trim() : "";
+
+const sourceValue = (input: unknown, maxLength = 250) =>
+  value(input).slice(0, maxLength);
 
 const shown = (input: string | undefined) => input || "Not provided";
 
@@ -80,8 +92,10 @@ function normalizeLead(lead: Record<string, unknown>): LeadData {
     condition: value(lead.condition),
     knownIssues: value(lead.knownIssues),
     repairsNeeded: value(lead.repairsNeeded),
+    considering: value(lead.considering),
     timeline: value(lead.timeline),
     mainGoal: value(lead.mainGoal) || value(lead.timeline),
+    mortgageBalance: value(lead.mortgageBalance),
     ownership: value(lead.ownership),
     occupancy: value(lead.occupancy),
     firstName: value(lead.firstName),
@@ -96,6 +110,13 @@ function normalizeLead(lead: Record<string, unknown>): LeadData {
     submittedAt: value(lead.submittedAt) || new Date().toISOString(),
     source: value(lead.source) || "website",
     sourcePage: value(lead.sourcePage) || "/",
+    utm_source: sourceValue(lead.utm_source),
+    utm_medium: sourceValue(lead.utm_medium),
+    utm_campaign: sourceValue(lead.utm_campaign),
+    utm_content: sourceValue(lead.utm_content),
+    utm_term: sourceValue(lead.utm_term),
+    landing_page: sourceValue(lead.landing_page, 1000),
+    referrer: sourceValue(lead.referrer, 1000),
     ...(value(lead.probateStatus) && { probateStatus: value(lead.probateStatus) }),
     ...(value(lead.outOfState) && { outOfState: value(lead.outOfState) }),
     ...(value(lead.damageType) && { damageType: value(lead.damageType) }),
@@ -138,8 +159,8 @@ function buildTaskDescription(data: LeadData) {
     .join("\n");
 
   return [
-    "Lead type: Investor Property Review",
-    "Source: OaklandCash website",
+    "Lead type: The Proper Review",
+    "Source: Proper Home Options website",
     `Submission timestamp: ${data.submittedAt}`,
     `Investor fit: ${data.investorFit}`,
     `Investor fit score: ${data.investorFitScore}`,
@@ -154,8 +175,10 @@ function buildTaskDescription(data: LeadData) {
     `Overall condition: ${data.condition}`,
     `Known issues: ${shown(data.knownIssues || data.damageType)}`,
     `Repairs needed: ${shown(data.repairsNeeded || data.repairEstimate)}`,
+    `Considering: ${shown(data.considering)}`,
     `Timeline: ${data.timeline}`,
     `Main goal: ${shown(data.mainGoal)}`,
+    `Approximate mortgage balance: ${shown(data.mortgageBalance)}`,
     `Ownership situation: ${shown(data.ownership)}`,
     conditional ? `\n## Conditional Details\n${conditional}` : "",
     "",
@@ -165,6 +188,15 @@ function buildTaskDescription(data: LeadData) {
     `Email: ${shown(data.email)}`,
     `Preferred contact method: ${shown(data.preferredContactMethod)}`,
     `Best time to reach: ${shown(data.bestTimeToReach)}`,
+    "",
+    "## Attribution",
+    `UTM source: ${shown(data.utm_source)}`,
+    `UTM medium: ${shown(data.utm_medium)}`,
+    `UTM campaign: ${shown(data.utm_campaign)}`,
+    `UTM content: ${shown(data.utm_content)}`,
+    `UTM term: ${shown(data.utm_term)}`,
+    `Landing page: ${shown(data.landing_page)}`,
+    `Referrer: ${shown(data.referrer)}`,
   ]
     .filter(Boolean)
     .join("\n");
@@ -182,6 +214,7 @@ function buildClickUpTags(data: LeadData) {
     data.occupancy,
     data.timeline,
     data.mainGoal,
+    data.considering,
     data.urgencyReason,
     data.moveOutDate,
     data.probateStatus,
@@ -255,8 +288,9 @@ function buildNotificationText(data: LeadData) {
   const propertyDisplayAddress = displayAddress(data.address, data.city);
 
   return [
-    `New Investor Property Review: ${propertyDisplayAddress}, ${data.city}`,
+    `New Proper Review: ${propertyDisplayAddress}, ${data.city}`,
     "",
+    "Lead type: The Proper Review",
     notificationPriority(data),
     "",
     `Investor fit result: ${data.investorFit}`,
@@ -270,8 +304,10 @@ function buildNotificationText(data: LeadData) {
     `Overall condition: ${data.condition}`,
     `Known issues: ${shown(data.knownIssues || data.damageType)}`,
     `Repairs needed: ${shown(data.repairsNeeded || data.repairEstimate)}`,
+    `Considering: ${shown(data.considering)}`,
     `Timeline: ${data.timeline}`,
     `Main goal: ${shown(data.mainGoal)}`,
+    `Approximate mortgage balance: ${shown(data.mortgageBalance)}`,
     `Ownership situation: ${shown(data.ownership)}`,
     "",
     "Seller Contact",
@@ -281,8 +317,17 @@ function buildNotificationText(data: LeadData) {
     `Preferred contact method: ${shown(data.preferredContactMethod)}`,
     `Best time to reach: ${shown(data.bestTimeToReach)}`,
     "",
+    "Attribution",
+    `UTM source: ${shown(data.utm_source)}`,
+    `UTM medium: ${shown(data.utm_medium)}`,
+    `UTM campaign: ${shown(data.utm_campaign)}`,
+    `UTM content: ${shown(data.utm_content)}`,
+    `UTM term: ${shown(data.utm_term)}`,
+    `Landing page: ${shown(data.landing_page)}`,
+    `Referrer: ${shown(data.referrer)}`,
+    "",
     `Submission timestamp: ${data.submittedAt}`,
-    "Source: OaklandCash website",
+    "Source: Proper Home Options website",
   ].join("\n");
 }
 
@@ -293,7 +338,7 @@ async function createClickUpTask(data: LeadData) {
 
   // Future ClickUp custom field IDs can be mapped here when the target list schema is finalized.
   const payload = {
-    name: `Investor Property Review: ${propertyDisplayAddress}, ${data.city}`,
+    name: `Proper Review: ${propertyDisplayAddress}, ${data.city}`,
     description: buildTaskDescription(data),
     tags: buildClickUpTags(data),
   };
@@ -333,9 +378,9 @@ async function sendLeadNotification(data: LeadData) {
 
   // Production should use a verified sender domain instead of onboarding@resend.dev.
   const payload = {
-    from: "OaklandCash Leads <onboarding@resend.dev>",
+    from: "Proper Home Options <onboarding@resend.dev>",
     to: recipient,
-    subject: `New Investor Property Review: ${propertyDisplayAddress}, ${data.city}`,
+    subject: `New Proper Review: ${propertyDisplayAddress}, ${data.city}`,
     text: buildNotificationText(data),
   };
 
@@ -359,6 +404,72 @@ async function sendLeadNotification(data: LeadData) {
   }
 }
 
+function buildSellerConfirmationText() {
+  const contactEmail = process.env.LEAD_NOTIFICATION_EMAIL;
+
+  return [
+    "Thank you for starting your Proper Review. I'll review the information you provided and follow up with practical property paths that may be worth considering based on your property, timeline, and goals.",
+    "",
+    "This is not an appraisal, offer, or guarantee. Not every property will receive an offer. Submitting your information does not create an agency relationship or obligation to sell. There is no pressure or obligation to continue.",
+    "",
+    "Proper Home Options is not an appraisal, lender, legal advisor, tax advisor, or financial advisor. Dimitri Kosmidis is a licensed Michigan real estate professional and real estate investor. In some cases, Dimitri or his investor network may be interested in purchasing the property.",
+    contactEmail ? `Questions may be sent to ${contactEmail}.` : "",
+    "",
+    "Thank you,",
+    "Dimitri Kosmidis",
+  ]
+    .filter((line) => line !== "")
+    .join("\n\n");
+}
+
+async function sendSellerConfirmation(data: LeadData) {
+  const enabled =
+    process.env.SEND_SELLER_CONFIRMATION?.trim().toLowerCase() === "true";
+  const apiKey = process.env.RESEND_API_KEY;
+
+  if (!enabled || !data.email) {
+    return;
+  }
+
+  if (!apiKey) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn(
+        "[Lead] Seller confirmation enabled without Resend configuration; skipping send."
+      );
+    }
+    return;
+  }
+
+  // Production should use a verified sender domain once the final domain is chosen.
+  const payload = {
+    from: "Proper Home Options <onboarding@resend.dev>",
+    to: data.email,
+    subject: "Your Proper Review Request Was Received",
+    text: buildSellerConfirmationText(),
+  };
+
+  try {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok && process.env.NODE_ENV !== "production") {
+      console.warn(
+        `[Lead] Seller confirmation failed. Status: ${response.status}`
+      );
+    }
+  } catch {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("[Lead] Seller confirmation failed.");
+    }
+  }
+}
+
 function buildSmsMessage(data: LeadData) {
   const propertyDisplayAddress = displayAddress(data.address, data.city);
   const contact = data.phone
@@ -366,7 +477,7 @@ function buildSmsMessage(data: LeadData) {
     : `Email: ${smsValue(data.email, 34)}`;
 
   return [
-    `New OaklandCash lead: ${smsValue(data.investorFit, 22)} - ${smsValue(propertyDisplayAddress, 32)}, ${smsValue(data.city, 18)}.`,
+    `New Proper Home Options lead: ${smsValue(data.investorFit, 22)} - ${smsValue(propertyDisplayAddress, 32)}, ${smsValue(data.city, 18)}.`,
     `Seller: ${smsValue(data.firstName, 18)}.`,
     `${contact}.`,
     `Goal: ${smsValue(data.mainGoal, 34)}.`,
@@ -438,9 +549,10 @@ export async function POST(req: NextRequest) {
       await createClickUpTask(data);
     }
     await sendLeadNotification(data);
+    await sendSellerConfirmation(data);
     await sendSmsNotification(data);
 
-    console.log(`[Lead] Property review received | ${data.intent} | ${data.city}`);
+    console.log(`[Lead] Proper Review request received | ${data.intent} | ${data.city}`);
     return NextResponse.json({ success: true });
   } catch {
     console.error("[Lead] Request handling failed.");

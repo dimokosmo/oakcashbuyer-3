@@ -2,86 +2,75 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Property Review Received | OaklandCash",
+  title: "Proper Review Request Received | Proper Home Options",
   description:
-    "Your investor property review request was received. Dimitrios Kosmidis will review the submitted property details.",
+    "Your Proper Review request was received and will be reviewed based on the property, timeline, and goals you shared.",
 };
 
-const disclosure =
-  "Dimitrios Kosmidis is a licensed Michigan real estate professional and real estate investor. This site is intended for homeowners interested in a possible direct sale, investor purchase, or off-market property review. Not every property will receive an offer. Submitting a property does not create an agency relationship or obligation to sell.";
-
-const steps = [
-  "I'll review the property details",
-  "I may look at condition, location, repair scope, occupancy, and rental or resale potential",
-  "If it looks like a fit, I'll reach out for a direct conversation",
-  "Not every property receives an offer",
+const nextSteps = [
+  "Dimitri will review the property details and your stated goals",
+  "Relevant paths may include a direct sale, listing, refinance conversation, rental, repair, or hold strategy",
+  "You may receive follow-up questions before any useful range or recommendation can be discussed",
+  "You remain free to compare providers and decide whether to take any next step",
 ];
 
 export default function ThankYouPage() {
   return (
-    <main className="ty-page">
+    <main className="thanks-page">
       <style>{`
-        .ty-page{min-height:100vh;background:#0C0C0C;color:#E8E4DC;font-family:'Outfit',sans-serif;position:relative;overflow:hidden;padding:120px 24px 48px;display:flex;align-items:center;}
-        .ty-page::before{content:'';position:absolute;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,rgba(232,168,76,0.12),transparent 70%);filter:blur(90px);top:-120px;right:-80px;}
-        .ty-page::after{content:'';position:absolute;width:420px;height:420px;border-radius:50%;background:radial-gradient(circle,rgba(245,240,232,0.04),transparent 70%);filter:blur(90px);bottom:6%;left:-120px;}
-        .ty-shell{max-width:980px;margin:0 auto;width:100%;position:relative;z-index:1;}
-        .ty-badge{display:inline-flex;align-items:center;gap:10px;font-size:11px;font-weight:700;color:#E8A84C;padding:9px 16px;border-radius:100px;border:1px solid rgba(232,168,76,0.2);background:rgba(232,168,76,0.05);margin-bottom:24px;text-transform:uppercase;letter-spacing:0.08em;}
-        .ty-dot{width:7px;height:7px;background:#E8A84C;border-radius:50%;}
-        .ty-card{background:#151515;border:1px solid rgba(255,255,255,0.06);border-radius:22px;padding:46px 40px;position:relative;overflow:hidden;}
-        .ty-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#E8A84C,transparent 80%);}
-        h1{font-family:'DM Serif Display',serif;font-size:clamp(38px,6vw,64px);line-height:1.06;color:#F5F0E8;letter-spacing:0;margin:0 0 18px;}
-        .ty-body{font-size:18px;line-height:1.75;color:#9A948A;max-width:720px;margin:0 0 34px;}
-        .ty-grid{display:grid;grid-template-columns:1.05fr 0.95fr;gap:34px;align-items:start;}
-        .ty-list{display:grid;gap:12px;margin:0;padding:0;list-style:none;}
-        .ty-list li{display:flex;gap:12px;align-items:flex-start;background:#111111;border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:14px 16px;color:#D4CCBC;font-size:14px;line-height:1.55;}
-        .ty-check{color:#E8A84C;flex:0 0 auto;margin-top:1px;}
-        .ty-panel{background:#111111;border:1px solid rgba(255,255,255,0.06);border-radius:16px;padding:24px;}
-        .ty-panel-title{font-size:11px;color:#E8A84C;text-transform:uppercase;letter-spacing:0.12em;font-weight:700;margin-bottom:12px;}
-        .ty-disclosure{font-size:12px;line-height:1.7;color:#6B665E;margin:0;}
-        .ty-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:34px;}
-        .ty-btn{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:0 22px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;transition:all 0.25s ease;}
-        .ty-btn-primary{background:#E8A84C;color:#0C0C0C;}
-        .ty-btn-primary:hover{background:#F2C97E;transform:translateY(-1px);}
-        .ty-btn-secondary{border:1px solid rgba(255,255,255,0.12);color:#F5F0E8;background:transparent;}
-        .ty-btn-secondary:hover{border-color:#E8A84C;color:#E8A84C;}
-        @media(max-width:760px){.ty-page{padding:96px 18px 36px;align-items:flex-start}.ty-card{padding:34px 22px}.ty-grid{grid-template-columns:1fr}.ty-body{font-size:16px}.ty-actions{flex-direction:column}.ty-btn{width:100%}}
+        .thanks-page{min-height:100vh;background:#F7F4EE;color:#1D2A25;font-family:'Outfit',sans-serif;padding:100px 24px 54px;display:grid;place-items:center;}
+        .thanks-shell{width:min(940px,100%);}
+        .thanks-brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px;margin-bottom:28px;}
+        .thanks-mark{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;background:#365347;color:#fff;font-family:'DM Serif Display',serif;font-size:20px;}
+        .thanks-card{background:#FFFDF9;border:1px solid #D9DED8;border-radius:10px;padding:clamp(28px,6vw,58px);box-shadow:0 22px 70px rgba(29,42,37,.08);}
+        .thanks-kicker{font-size:11px;color:#527264;text-transform:uppercase;letter-spacing:.1em;font-weight:700;margin-bottom:15px;}
+        h1{font-family:'DM Serif Display',serif;font-size:clamp(40px,6vw,64px);font-weight:400;line-height:1.05;letter-spacing:0;margin:0 0 18px;max-width:760px;}
+        .thanks-copy{font-size:17px;line-height:1.75;color:#657169;max-width:730px;margin:0 0 34px;}
+        .thanks-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:32px;align-items:start;}
+        .thanks-list{list-style:none;padding:0;margin:0;display:grid;gap:12px;}
+        .thanks-list li{display:flex;gap:11px;padding:14px 15px;border:1px solid #D9DED8;border-radius:8px;font-size:14px;line-height:1.55;color:#34453E;}
+        .thanks-check{color:#527264;font-weight:700;}
+        .thanks-note{background:#E7EEE9;border-radius:8px;padding:22px;font-size:12px;line-height:1.75;color:#34453E;}
+        .thanks-note strong{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#527264;margin-bottom:8px;}
+        .thanks-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:34px;}
+        .thanks-button{min-height:48px;display:inline-flex;align-items:center;justify-content:center;padding:0 21px;border-radius:8px;font-size:14px;font-weight:700;}
+        .thanks-primary{background:#365347;color:#fff}.thanks-secondary{border:1px solid #C8D0CA;color:#1D2A25;}
+        @media(max-width:720px){.thanks-page{padding:78px 18px 36px;align-items:start}.thanks-grid{grid-template-columns:1fr}.thanks-actions{display:grid}.thanks-button{width:100%}}
       `}</style>
 
-      <div className="ty-shell">
-        <div className="ty-badge">
-          <span className="ty-dot" />
-          Local Investor Review
-        </div>
-        <section className="ty-card">
-          <h1>Your Property Review Was Received</h1>
-          <p className="ty-body">
-            I'll review the details and follow up if the property appears to fit
-            my current rental, renovation, or investor purchase criteria. If
-            another path appears to make more sense, I'll be direct about that.
+      <div className="thanks-shell">
+        <Link className="thanks-brand" href="/">
+          <span className="thanks-mark">P</span>
+          <span>Proper Home Options</span>
+        </Link>
+        <section className="thanks-card">
+          <div className="thanks-kicker">Request received</div>
+          <h1>Your Proper Review request was received.</h1>
+          <p className="thanks-copy">
+            Dimitri will review the information you shared and follow up with
+            practical paths that may deserve a closer look. This is a starting
+            point for comparison, not a requirement to sell, list, refinance,
+            or use a particular provider.
           </p>
-
-          <div className="ty-grid">
-            <ul className="ty-list">
-              {steps.map((step) => (
+          <div className="thanks-grid">
+            <ul className="thanks-list">
+              {nextSteps.map((step) => (
                 <li key={step}>
-                  <span className="ty-check">✓</span>
+                  <span className="thanks-check">✓</span>
                   <span>{step}</span>
                 </li>
               ))}
             </ul>
-            <aside className="ty-panel">
-              <div className="ty-panel-title">Disclosure</div>
-              <p className="ty-disclosure">{disclosure}</p>
+            <aside className="thanks-note">
+              <strong>Important disclosure</strong>
+              Proper Home Options is not an appraisal, lender, legal advisor,
+              tax advisor, or financial advisor. Any ranges or options discussed
+              require additional review and are not offers or guarantees.
             </aside>
           </div>
-
-          <div className="ty-actions">
-            <Link className="ty-btn ty-btn-primary" href="/#offer">
-              Submit Another Property
-            </Link>
-            <Link className="ty-btn ty-btn-secondary" href="/">
-              Return Home
-            </Link>
+          <div className="thanks-actions">
+            <Link className="thanks-button thanks-primary" href="/#report">Submit Another Property</Link>
+            <Link className="thanks-button thanks-secondary" href="/">Return Home</Link>
           </div>
         </section>
       </div>

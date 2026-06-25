@@ -1,15 +1,16 @@
 import type { Metadata } from "next";
 import Script from "next/script";
+import { AttributionCapture } from "./AttributionCapture";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Submit Your Property for Local Investor Review | OaklandCash",
+  title: "Compare Your Home Options in Michigan | Proper Home Options",
   description:
-    "Submit an Oakland County property for local investor review by Dimitrios Kosmidis, a licensed Michigan real estate professional and investor.",
+    "Compare a cash offer, traditional sale, refinance conversation, rental, repair, or hold strategy with The Proper Review.",
   openGraph: {
-    title: "Submit Your Property for Local Investor Review | OaklandCash",
+    title: "Compare Your Home Options | Proper Home Options",
     description:
-      "A local review path for properties that may fit rentals, renovations, off-market purchases, or direct sale conversations.",
+      "Understand practical property paths before deciding whether to sell, refinance, rent, repair, or hold.",
     type: "website",
   },
 };
@@ -20,6 +21,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   const gaMeasurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
   const googleSiteVerification =
     process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION;
 
@@ -47,18 +49,16 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               "@context": "https://schema.org",
-              "@type": "RealEstateAgent",
-              name: "Dimitrios Kosmidis",
+              "@type": "ProfessionalService",
+              name: "Proper Home Options",
               description:
-                "Licensed Michigan real estate professional and real estate investor reviewing Oakland County properties for possible direct purchase, renovation, rental, or off-market investment opportunities.",
-              url: "https://oaklandcash.com",
-              telephone: "+12485550100",
-              address: {
-                "@type": "PostalAddress",
-                addressLocality: "Rochester Hills",
-                addressRegion: "MI",
-                postalCode: "48309",
-                addressCountry: "US",
+                "A Michigan homeowner decision platform for comparing cash-sale, traditional-sale, refinance-conversation, rental, repair, and hold options.",
+              ...(siteUrl ? { url: siteUrl } : {}),
+              founder: {
+                "@type": "Person",
+                name: "Dimitri Kosmidis",
+                jobTitle:
+                  "Licensed Michigan real estate professional and real estate investor",
               },
               areaServed: [
                 "Rochester Hills",
@@ -76,6 +76,7 @@ export default function RootLayout({
         />
       </head>
       <body>
+        <AttributionCapture />
         {gaMeasurementId ? (
           <>
             <Script
